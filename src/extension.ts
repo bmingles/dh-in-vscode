@@ -18,46 +18,6 @@ export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand(
     "dh-vscode-core.helloWorld",
     async () => {
-      // class Event {
-      //   constructor(type, dict) {
-      //     this.type = type;
-      //     if (dict) {
-      //       this.detail = dict.detail;
-      //     }
-      //   }
-      // }
-
-      // class CustomEvent extends Event {
-      //   constructor(...args) {
-      //     super(...args);
-      //   }
-      // }
-
-      // // @ts-ignore
-      // global.self = global;
-      // // @ts-ignore
-      // global.window = global;
-      // // @ts-ignore
-      // global.window.location = new URL("http://localhost:10000");
-      // // @ts-ignore
-      // global.Event = Event;
-      // // @ts-ignore
-      // global.CustomEvent = CustomEvent;
-      // // @ts-ignore
-      // global.WebSocket = require("ws");
-
-      // Copied from https://github.com/deephaven/deephaven.io/blob/main/tools/run-examples/includeAPI.mjs
-      /* @ts-ignore */
-      // global.self = global;
-      // global.window = global;
-      // global.this = global;
-      // global.Event = Event;
-      // global.CustomEvent = CustomEvent;
-      // global.WebSocket = ws;
-      // global.window.location = new URL("http://localhost:10000");
-
-      // const dh = (await dynamicImport("../lib/dh-core.mjs")).default;
-
       const dh = await initJsApi();
 
       // See https://github.com/deephaven/deephaven.io/blob/0675158d60c0864b51cfab5616a83671c3171130/tools/run-examples/createSnapshots.mjs#L227
