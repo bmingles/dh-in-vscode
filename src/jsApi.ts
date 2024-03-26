@@ -34,3 +34,11 @@ export async function initJsApi() {
 
   return dh;
 }
+
+export async function initSession(dh) {
+  const type = "python";
+  const client = new dh.CoreClient("http://localhost:10000");
+  await client.login({ type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS });
+  const cn = await client.getAsIdeConnection();
+  return cn.startSession(type);
+}
