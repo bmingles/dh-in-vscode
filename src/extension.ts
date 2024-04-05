@@ -29,29 +29,34 @@ export function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Deephaven", "log");
 
   async function initDh() {
-    const authType = await vscode.window.showQuickPick([
-      "Anonymous",
-      "Pre-Shared Key",
-    ]);
-
     const dh = await initJsApi();
 
-    const credentials =
-      authType === "Pre-Shared Key"
-        ? {
-            type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
-            token: await vscode.window.showInputBox({
-              placeHolder: "Pre-Shared Key",
-              prompt: "Enter your Deephaven pre-shared key",
-            }),
-          }
-        : {
-            type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
-          };
+    try {
+      ide = await initSession(dh, {
+        type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
+      });
+    } catch (err) {
+      try {
+        ide = await initSession(dh, {
+          type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
+          token: await vscode.window.showInputBox({
+            placeHolder: "Pre-Shared Key",
+            prompt: "Enter your Deephaven pre-shared key",
+          }),
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (ide == null) {
+      vscode.window.showErrorMessage("Failed to connect to Deephaven server");
+      return;
+    }
+
+    vscode.window.showInformationMessage("Connected to Deephaven server");
 
     outputChannel.show();
-
-    ide = await initSession(dh, credentials);
 
     ide.onLogMessage((message: DhType.ide.LogItem) => {
       if (message.logLevel === "STDOUT" || message.logLevel === "ERROR") {
@@ -69,6 +74,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     if (ide == null) {
       await initDh();
+    }
+
+    if (ide == null) {
+      return;
     }
 
     const selectionRange =
