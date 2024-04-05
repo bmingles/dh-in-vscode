@@ -21,8 +21,13 @@
       },
       {
         "command": "dh-vscode-core.runCode",
-        "title": "Deephaven: Run Code",
+        "title": "Deephaven: Run",
         "icon": "$(run-all)"
+      },
+      {
+        "command": "dh-vscode-core.runSelection",
+        "title": "Deephaven: Run Selected",
+        "icon": "$(run)"
       }
     ],
     "menus": {
@@ -30,7 +35,12 @@
         {
           "command": "dh-vscode-core.runCode",
           "group": "navigation",
-          "when": "editorLangId == python"
+          "when": "editorLangId == python && editorFocus"
+        },
+        {
+          "command": "dh-vscode-core.runSelection",
+          "group": "navigation",
+          "when": "editorLangId == python && editorFocus && editorHasSelection"
         }
       ]
     }
