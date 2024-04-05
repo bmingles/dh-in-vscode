@@ -29,10 +29,29 @@ export function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Deephaven", "log");
 
   async function initDh() {
-    outputChannel.show();
+    const authType = await vscode.window.showQuickPick([
+      "Anonymous",
+      "Pre-Shared Key",
+    ]);
 
     const dh = await initJsApi();
-    ide = await initSession(dh);
+
+    const credentials =
+      authType === "Anonymous"
+        ? {
+            type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
+          }
+        : {
+            type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
+            token: await vscode.window.showInputBox({
+              placeHolder: "Pre-Shared Key",
+              prompt: "Enter your Deephaven pre-shared key",
+            }),
+          };
+
+    outputChannel.show();
+
+    ide = await initSession(dh, credentials);
 
     ide.onLogMessage((message: DhType.ide.LogItem) => {
       if (message.logLevel === "STDOUT" || message.logLevel === "ERROR") {

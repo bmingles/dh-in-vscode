@@ -36,10 +36,13 @@ export async function initJsApi() {
   return dh;
 }
 
-export async function initSession(dh): DhType.IdeSession {
+export async function initSession(
+  dh: typeof DhType,
+  credentials: DhType.LoginCredentials
+): DhType.IdeSession {
   const type = "python";
   const client = new dh.CoreClient("http://localhost:10000");
-  await client.login({ type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS });
+  await client.login(credentials);
   const cn = await client.getAsIdeConnection();
   return cn.startSession(type);
 }
