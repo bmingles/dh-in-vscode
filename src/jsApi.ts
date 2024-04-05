@@ -4,6 +4,12 @@ import * as ws from "ws";
 // HACK: Prevent typescript compiler from converting dynamic `import` to `require`
 const dynamicImport = new Function("specifier", "return import(specifier)");
 
+export class CustomEvent extends Event {
+  constructor(...args) {
+    super(...args);
+  }
+}
+
 export async function initJsApi() {
   class Event {
     constructor(type, dict) {
@@ -11,12 +17,6 @@ export async function initJsApi() {
       if (dict) {
         this.detail = dict.detail;
       }
-    }
-  }
-
-  class CustomEvent extends Event {
-    constructor(...args) {
-      super(...args);
     }
   }
 
