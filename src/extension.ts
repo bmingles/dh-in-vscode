@@ -76,18 +76,17 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  const connectCmd = vscode.commands.registerCommand(
-    CONNECT_COMMAND,
-    async () => {
-      await initDh();
+  // const connectCmd = vscode.commands.registerCommand(
+  //   CONNECT_COMMAND,
+  //   async () => {
+  //     await initDh();
 
-      ide!.runCode("print('Vscode extension connected!')");
+  //     ide!.runCode("print('Vscode extension connected!')");
 
-      vscode.window.showInformationMessage("Connected to Deephaven server");
-    }
-  );
-
-  connectStatusBarItem = createConnectStatusBarItem();
+  //     vscode.window.showInformationMessage("Connected to Deephaven server");
+  //   }
+  // );
+  // connectStatusBarItem = createConnectStatusBarItem();
 
   const runCodeCmd = vscode.commands.registerTextEditorCommand(
     RUN_CODE_COMMAND,
@@ -103,25 +102,20 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(
-    outputChannel,
-    connectCmd,
-    runCodeCmd,
-    runSelectionCmd
-  );
+  context.subscriptions.push(outputChannel, runCodeCmd, runSelectionCmd);
 }
 
 export function deactivate() {}
 
-/** Create a status bar item for connecting to DH server */
-function createConnectStatusBarItem() {
-  const statusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Left,
-    100
-  );
-  statusBarItem.command = CONNECT_COMMAND;
-  statusBarItem.text = "$(debug-disconnect) Connect to Deephaven";
-  statusBarItem.show();
+// /** Create a status bar item for connecting to DH server */
+// function createConnectStatusBarItem() {
+//   const statusBarItem = vscode.window.createStatusBarItem(
+//     vscode.StatusBarAlignment.Left,
+//     100
+//   );
+//   statusBarItem.command = CONNECT_COMMAND;
+//   statusBarItem.text = "$(debug-disconnect) Connect to Deephaven";
+//   statusBarItem.show();
 
-  return statusBarItem;
-}
+//   return statusBarItem;
+// }
