@@ -8,9 +8,6 @@ const CONNECT_COMMAND = "dh-vscode-core.connect";
 const RUN_CODE_COMMAND = "dh-vscode-core.runCode";
 const RUN_SELECTION_COMMAND = "dh-vscode-core.runSelection";
 
-let connectStatusBarItem: vscode.StatusBarItem;
-let ide: DhType.IdeSession | null = null;
-
 /* eslint-disable @typescript-eslint/naming-convention */
 const icons = {
   Figure: "📈",
@@ -26,6 +23,9 @@ export function activate(context: vscode.ExtensionContext) {
     'Congratulations, your extension "dh-vscode-core" is now active!'
   );
 
+  let ide: DhType.IdeSession | null = null;
+  const panels = new Map<string, vscode.WebviewPanel>();
+
   const outputChannel = vscode.window.createOutputChannel("Deephaven", "log");
 
   async function initDh() {
@@ -37,16 +37,16 @@ export function activate(context: vscode.ExtensionContext) {
     const dh = await initJsApi();
 
     const credentials =
-      authType === "Anonymous"
+      authType === "Pre-Shared Key"
         ? {
-            type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
-          }
-        : {
             type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
             token: await vscode.window.showInputBox({
               placeHolder: "Pre-Shared Key",
               prompt: "Enter your Deephaven pre-shared key",
             }),
+          }
+        : {
+            type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
           };
 
     outputChannel.show();
@@ -89,9 +89,43 @@ export function activate(context: vscode.ExtensionContext) {
     const changed = [...result.changes.created, ...result.changes.updated];
 
     console.log("test:", changed);
-    changed.forEach(({ title, type }) => {
+    changed.forEach(({ title, type }, i) => {
       const icon = icons[type as IconType] ?? type;
       outputChannel.appendLine(`${icon} ${title}`);
+
+      if (!panels.has(title)) {
+        const panel = vscode.window.createWebviewPanel(
+          "dhPanel", // Identifies the type of the webview. Used internally
+          title,
+          vscode.ViewColumn.Two, // Editor column to show the new webview panel in.
+          {
+            enableScripts: true,
+            retainContextWhenHidden: true,
+          } // Webview options. More on these later.
+        );
+
+        panels.set(title, panel);
+      }
+
+      panels.get(title)!.webview.html = `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Cat Coding</title>
+            <style>
+            iframe, html, body {
+              border: none;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+            }
+            </style>
+        </head>
+        <body>
+            <iframe src="http://localhost:4010/?name=${title}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
+        </body>
+        </html>`;
     });
   }
 
@@ -105,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
   //     vscode.window.showInformationMessage("Connected to Deephaven server");
   //   }
   // );
-  // connectStatusBarItem = createConnectStatusBarItem();
+  // const connectStatusBarItem = createConnectStatusBarItem();
 
   const runCodeCmd = vscode.commands.registerTextEditorCommand(
     RUN_CODE_COMMAND,

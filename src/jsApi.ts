@@ -42,7 +42,9 @@ export async function initSession(
 ): DhType.IdeSession {
   const type = "python";
   const client = new dh.CoreClient("http://localhost:10000");
+
   await client.login(credentials);
+
   const cn = await client.getAsIdeConnection();
   return cn.startSession(type);
 }
