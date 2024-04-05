@@ -8,7 +8,7 @@ const CONNECT_COMMAND = "dh-vscode-core.connect";
 const RUN_CODE_COMMAND = "dh-vscode-core.runCode";
 
 let connectStatusBarItem: vscode.StatusBarItem;
-let ide: any;
+let ide: DhType.IdeSession | null = null;
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const icons = {
@@ -40,32 +40,47 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  setTimeout(async () => {
-    initDh();
-    // DH extension mucks with the global object in a way that breaks Copilot
-    // activation. Introducing a delay so that Copilot has a chance to load first.
-    // TODO: Figure out a better way
-  }, 3000);
+  // setTimeout(async () => {
+  //   initDh();
+  //   // DH extension mucks with the global object in a way that breaks Copilot
+  //   // activation. Introducing a delay so that Copilot has a chance to load first.
+  //   // TODO: Figure out a better way
+  // }, 3000);
 
-  // TODO: Possibly have a "Connect to Deephaven" status bar item
-  // const connectCmd = vscode.commands.registerCommand(
-  //   CONNECT_COMMAND,
-  //   async () => {
-  //     const dh = await initJsApi();
-  //     ide = await initSession(dh);
-  //     ide.runCode("print('Vscode extension connected!')");
+  const connectCmd = vscode.commands.registerCommand(
+    CONNECT_COMMAND,
+    async () => {
+      await initDh();
 
-  //     vscode.window.showInformationMessage("Connected to Deephaven server");
-  //   }
-  // );
+      ide!.runCode("print('Vscode extension connected!')");
 
-  // connectStatusBarItem = createConnectStatusBarItem();
+      vscode.window.showInformationMessage("Connected to Deephaven server");
+    }
+  );
+
+  connectStatusBarItem = createConnectStatusBarItem();
 
   const runCodeCmd = vscode.commands.registerTextEditorCommand(
     RUN_CODE_COMMAND,
     async (editor) => {
+      if (editor.document.languageId !== "python") {
+        console.log(
+          `languageId '${editor.document.languageId}' not supported.`
+        );
+
+        // TODO: fix this
+        vscode.window.showInformationMessage("Need to focus Python editor");
+
+        return;
+      }
+
+      if (ide == null) {
+        await initDh();
+      }
+
       const text = editor.document.getText();
-      const result = await ide.runCode(text);
+      console.log("Sending text to dh:", text);
+      const result = await ide!.runCode(text);
 
       const changed = [...result.changes.created, ...result.changes.updated];
 
@@ -77,20 +92,20 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(runCodeCmd);
+  context.subscriptions.push(outputChannel, connectCmd, runCodeCmd);
 }
 
 export function deactivate() {}
 
 /** Create a status bar item for connecting to DH server */
-// function createConnectStatusBarItem() {
-//   const statusBarItem = vscode.window.createStatusBarItem(
-//     vscode.StatusBarAlignment.Left,
-//     100
-//   );
-//   statusBarItem.command = CONNECT_COMMAND;
-//   statusBarItem.text = "$(debug-disconnect) Connect to Deephaven";
-//   statusBarItem.show();
+function createConnectStatusBarItem() {
+  const statusBarItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Left,
+    100
+  );
+  statusBarItem.command = CONNECT_COMMAND;
+  statusBarItem.text = "$(debug-disconnect) Connect to Deephaven";
+  statusBarItem.show();
 
-//   return statusBarItem;
-// }
+  return statusBarItem;
+}

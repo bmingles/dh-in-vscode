@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as ws from "ws";
+import type { dh as DhType } from "../src/jsapi-types";
 
 // HACK: Prevent typescript compiler from converting dynamic `import` to `require`
 const dynamicImport = new Function("specifier", "return import(specifier)");
@@ -35,7 +36,7 @@ export async function initJsApi() {
   return dh;
 }
 
-export async function initSession(dh) {
+export async function initSession(dh): DhType.IdeSession {
   const type = "python";
   const client = new dh.CoreClient("http://localhost:10000");
   await client.login({ type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS });
