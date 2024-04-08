@@ -3,6 +3,8 @@
 Deephaven in VS Code
 
 - Run Python dh scripts from vscode against a running DH core server
+  - Run all
+  - Run selected code
 - View output in panels in vscode (relies on `embed-widget` which currently doesn't support `Deephaven UI`)
 - View output in DH (pending https://github.com/deephaven/web-client-ui/pull/1925)
 
@@ -18,13 +20,7 @@ or
 
 Build a .vsix locally via `npm run package`
 
-## Run a script
-
-1. Start a DH core server at http://localhost:1000
-2. Open a DH Python script in vscode
-3. Click the `Deephaven: Run` button in the top right of the editor
-
-   ![Deephave: Run](docs/run.png)
+## Server Connection
 
 The first time a script is run in an open workspace, the extension will:
 
@@ -36,14 +32,31 @@ The first time a script is run in an open workspace, the extension will:
 
 On subsequent script runs, the session will be re-used and only steps 4 and 5 will run
 
-## Downloading JS API
+## Running Scripts
+
+1. Start a DH core server at http://localhost:1000
+2. Open a DH Python script in vscode
+3. Click the `Deephaven: Run` button in the top right of the editor
+
+   ![Deephaven: Run](docs/run.png)
+
+### Run a selection
+
+1. Select text to run
+2. Should see new button appear in top right
+
+   ![Deephaven: Run Selection](docs/run-selection.png)
+
+## Implementation Notes
+
+### Downloading JS API
 
 The extension dynamically downloads and loads the DH JS API from a DH Core server.
 
 - `src/jsApi.downloadDhFromServer()`
   At runtime, `dh-internal.js` and `dh-core.js` are downloaded from the running DH server (default http://localhost:10000). The files are saved to `out/tmp` as `.cjs` modules, and import / export are converted to cjs compatible ones.
 
-## TODO
+### TODO
 
 - https://github.com/deephaven/web-client-ui/pull/1925 - allow panels to update in DH when commands are sent from extension
 - Support server url configuration
