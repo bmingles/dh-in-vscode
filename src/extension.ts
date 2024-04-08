@@ -21,21 +21,31 @@ type IconType = keyof typeof icons;
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "dh-in-vscode" is now active!');
 
+  const serverUrl = "http://localhost:10000";
+
   let ide: DhType.IdeSession | null = null;
   const panels = new Map<string, vscode.WebviewPanel>();
 
   const outputChannel = vscode.window.createOutputChannel("Deephaven", "log");
 
   async function initDh() {
-    const dh = await initJsApi();
+    let dh: typeof DhType | null = null;
 
     try {
-      ide = await initSession(dh, {
+      dh = await initJsApi(serverUrl);
+    } catch (err) {
+      console.error(err);
+      vscode.window.showErrorMessage("Failed to initialize Deephaven API");
+      return;
+    }
+
+    try {
+      ide = await initSession(dh, serverUrl, {
         type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
       });
     } catch (err) {
       try {
-        ide = await initSession(dh, {
+        ide = await initSession(dh, serverUrl, {
           type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
           token: await vscode.window.showInputBox({
             placeHolder: "Pre-Shared Key",
