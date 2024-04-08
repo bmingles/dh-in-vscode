@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { initJsApi, initSession } from "./jsApi";
 import type { dh as DhType } from "./jsapi-types";
 
-const CONNECT_COMMAND = "dh-vscode-core.connect";
+// const CONNECT_COMMAND = "dh-vscode-core.connect";
 const RUN_CODE_COMMAND = "dh-vscode-core.runCode";
 const RUN_SELECTION_COMMAND = "dh-vscode-core.runSelection";
 
@@ -97,7 +97,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     const changed = [...result.changes.created, ...result.changes.updated];
 
-    console.log("test:", changed);
     changed.forEach(({ title, type }, i) => {
       const icon = icons[type as IconType] ?? type;
       outputChannel.appendLine(`${icon} ${title}`);
@@ -106,35 +105,17 @@ export function activate(context: vscode.ExtensionContext) {
         const panel = vscode.window.createWebviewPanel(
           "dhPanel", // Identifies the type of the webview. Used internally
           title,
-          vscode.ViewColumn.Two, // Editor column to show the new webview panel in.
+          vscode.ViewColumn.Two,
           {
             enableScripts: true,
             retainContextWhenHidden: true,
-          } // Webview options. More on these later.
+          }
         );
 
         panels.set(title, panel);
       }
 
-      panels.get(title)!.webview.html = `<!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Cat Coding</title>
-            <style>
-            iframe, html, body {
-              border: none;
-              width: 100%;
-              height: 100%;
-              overflow: hidden;
-            }
-            </style>
-        </head>
-        <body>
-            <iframe src="http://localhost:4010/?name=${title}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
-        </body>
-        </html>`;
+      panels.get(title)!.webview.html = getPanelHtml(title);
     });
   }
 
@@ -181,3 +162,25 @@ export function deactivate() {}
 
 //   return statusBarItem;
 // }
+
+function getPanelHtml(title: string) {
+  return `<!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Cat Coding</title>
+      <style>
+      iframe, html, body {
+        border: none;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      </style>
+  </head>
+  <body>
+      <iframe src="http://localhost:4010/?name=${title}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
+  </body>
+  </html>`;
+}
