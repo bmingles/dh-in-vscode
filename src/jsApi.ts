@@ -6,9 +6,6 @@ import * as path from "node:path";
 import * as ws from "ws";
 import type { dh as DhType } from "../src/jsapi-types";
 
-// HACK: Prevent typescript compiler from converting dynamic `import` to `require`
-const dynamicImport = new Function("specifier", "return import(specifier)");
-
 export class CustomEvent extends Event {
   constructor(...args: ConstructorParameters<typeof Event>) {
     super(...args);
@@ -44,7 +41,12 @@ export async function initJsApi(serverUrl: string): Promise<typeof DhType> {
   /* @ts-ignore */
   global.window.location = new URL(serverUrl);
 
-  const dh = await loadDhFromServer(serverUrl);
+  const tempDir = path.join(__dirname, "tmp");
+
+  await downloadDhFromServer(serverUrl, tempDir);
+  // const dh = (await dynamicImport(path.join(tempDir, "dh-core.cjs"))).default;
+
+  const dh = require(path.join(tempDir, "dh-core.cjs"));
 
   return dh;
 }
@@ -66,35 +68,46 @@ export async function initSession(
 /**
  * Download and import the Deephaven JS API from the server.
  * 1. Download `dh-internal.js` and `dh-core.js` from the server and save them
- * to `out/tmp` as `.mjs` files (renaming the import of `dh-internal.js` to `dh-internal.mjs`).
- * 2. Dynamically import `dh-core.mjs` and return the default export.
+ * to `out/tmp` as `.cjs` files (renaming of import / export to cjs compatible code).
+ * 2. requires `dh-core.mjs` and return the default export.
  * Copy / modified from https://github.com/deephaven/deephaven.io/blob/main/tools/run-examples/includeAPI.mjs
+ * NOTE: there is a limitation in current vscode extension apis such that es6 imports are not supported. This is why
+ * we have to save / convert to .cjs.
+ * See https://stackoverflow.com/questions/70620025/how-do-i-import-an-es6-javascript-module-in-my-vs-code-extension-written-in-type
  */
-async function loadDhFromServer(serverUrl: string) {
-  const tempDir = path.join(__dirname, "tmp");
+async function downloadDhFromServer(serverUrl: string, outDir: string) {
   try {
-    fs.rmSync(tempDir, { recursive: true });
+    fs.rmSync(outDir, { recursive: true });
   } catch {
     // Ignore if can't delete. Likely doesn't exist
   }
 
-  fs.mkdirSync(tempDir);
+  fs.mkdirSync(outDir);
   const dhInternal = await downloadFromURL(
     path.join(serverUrl, "jsapi/dh-internal.js")
   );
-  // Rename to .mjs to allow es6 import
-  fs.writeFileSync(path.join(tempDir, "dh-internal.mjs"), dhInternal);
+  // Convert to .cjs
+  fs.writeFileSync(
+    path.join(outDir, "dh-internal.cjs"),
+    dhInternal.replace(
+      `export{__webpack_exports__dhinternal as dhinternal};`,
+      `module.exports={dhinternal:__webpack_exports__dhinternal};`
+    )
+  );
 
   const dhCore = await downloadFromURL(
     path.join(serverUrl, "jsapi/dh-core.js")
   );
   fs.writeFileSync(
-    path.join(tempDir, "dh-core.mjs"),
-    // Replace the internal import with the mjs version
-    dhCore.replace(`from './dh-internal.js'`, `from './dh-internal.mjs'`)
+    path.join(outDir, "dh-core.cjs"),
+    // Convert to .cjs
+    dhCore
+      .replace(
+        `import {dhinternal} from './dh-internal.js';`,
+        `const {dhinternal} = require("./dh-internal.cjs");`
+      )
+      .replace(`export default dh;`, `module.exports = dh;`)
   );
-
-  return (await dynamicImport(path.join(tempDir, "dh-core.mjs"))).default;
 }
 
 /**

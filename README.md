@@ -8,8 +8,6 @@ Deephaven in VS Code
 
 ## Installation
 
-> NOTE: It seems that es6 modules don't yet work in installed extensions. This can be run in debug mode from vscode, but installing does not currently work. https://stackoverflow.com/questions/70620025/how-do-i-import-an-es6-javascript-module-in-my-vs-code-extension-written-in-type
-
 This extension is not yet published to the marketplace, but you can install a `.vsix` directly.
 
 Download one from the [releases/](releases/) folder.
@@ -40,9 +38,8 @@ On subsequent script runs, the session will be re-used and only steps 4 and 5 wi
 
 The extension dynamically downloads and loads the DH JS API from a DH Core server.
 
-- `src/jsApi.loadDhFromServer()`
-  At runtime, `dh-internal.js` and `dh-core.js` are downloaded from the running DH server (default http://localhost:10000). The files are saved to `out/tmp` as `ES6 (.mjs)` modules, and the import of `dh-internal.js` is replaced with `dh-internal.mjs` (see `loadDhFromServer()`)
-- Hack dynamic import to prevent ts compiler from changing to require `const dynamicImport = new Function("specifier", "return import(specifier)");`
+- `src/jsApi.downloadDhFromServer()`
+  At runtime, `dh-internal.js` and `dh-core.js` are downloaded from the running DH server (default http://localhost:10000). The files are saved to `out/tmp` as `.cjs` modules, and import / export are converted to cjs compatible ones.
 
 ## TODO
 
