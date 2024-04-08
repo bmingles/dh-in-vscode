@@ -5,8 +5,8 @@ Deephaven in VS Code
 - Run Python dh scripts from vscode against a running DH core server
   - Run all
   - Run selected code
-- View output in panels in vscode (relies on `embed-widget` which currently doesn't support `Deephaven UI`)
-- View output in DH (pending https://github.com/deephaven/web-client-ui/pull/1925)
+- View output in vscode (depends on `embed-widget` which currently doesn't support `Deephaven UI` but does support tables and charts)
+- View output in DH (depends on [pr#1925](https://github.com/deephaven/web-client-ui/pull/1925) to automatically update panels)
 
 ![Deephaven in VS Code Extension](docs/extension.png)
 
