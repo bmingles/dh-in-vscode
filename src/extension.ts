@@ -35,6 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
       dh = await initJsApi(serverUrl);
     } catch (err) {
       console.error(err);
+      outputChannel.appendLine(`Failed to initialize Deephaven API: ${err}`);
       vscode.window.showErrorMessage("Failed to initialize Deephaven API");
       return;
     }
@@ -44,6 +45,8 @@ export function activate(context: vscode.ExtensionContext) {
         type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
       });
     } catch (err) {
+      console.error(err);
+      outputChannel.appendLine(`Failed to connect anonymously: ${err}`);
       try {
         ide = await initSession(dh, serverUrl, {
           type: "io.deephaven.authentication.psk.PskAuthenticationHandler",

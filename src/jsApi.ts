@@ -78,27 +78,23 @@ async function loadDhFromServer(serverUrl: string) {
     // Ignore if can't delete. Likely doesn't exist
   }
 
-  try {
-    fs.mkdirSync(tempDir);
-    const dhInternal = await downloadFromURL(
-      path.join(serverUrl, "jsapi/dh-internal.js")
-    );
-    // Rename to .mjs to allow es6 import
-    fs.writeFileSync(path.join(tempDir, "dh-internal.mjs"), dhInternal);
+  fs.mkdirSync(tempDir);
+  const dhInternal = await downloadFromURL(
+    path.join(serverUrl, "jsapi/dh-internal.js")
+  );
+  // Rename to .mjs to allow es6 import
+  fs.writeFileSync(path.join(tempDir, "dh-internal.mjs"), dhInternal);
 
-    const dhCore = await downloadFromURL(
-      path.join(serverUrl, "jsapi/dh-core.js")
-    );
-    fs.writeFileSync(
-      path.join(tempDir, "dh-core.mjs"),
-      // Replace the internal import with the mjs version
-      dhCore.replace(`from './dh-internal.js'`, `from './dh-internal.mjs'`)
-    );
+  const dhCore = await downloadFromURL(
+    path.join(serverUrl, "jsapi/dh-core.js")
+  );
+  fs.writeFileSync(
+    path.join(tempDir, "dh-core.mjs"),
+    // Replace the internal import with the mjs version
+    dhCore.replace(`from './dh-internal.js'`, `from './dh-internal.mjs'`)
+  );
 
-    return (await dynamicImport(path.join(tempDir, "dh-core.mjs"))).default;
-  } catch (e) {
-    console.error(e);
-  }
+  return (await dynamicImport(path.join(tempDir, "dh-core.mjs"))).default;
 }
 
 /**

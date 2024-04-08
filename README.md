@@ -8,6 +8,8 @@ Deephaven in VS Code
 
 ## Installation
 
+> NOTE: It seems that es6 modules don't yet work in installed extensions. This can be run in debug mode from vscode, but installing does not currently work. https://stackoverflow.com/questions/70620025/how-do-i-import-an-es6-javascript-module-in-my-vs-code-extension-written-in-type
+
 This extension is not yet published to the marketplace, but you can install a `.vsix` directly.
 
 Download one from the [releases/](releases/) folder.
