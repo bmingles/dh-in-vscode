@@ -1,4 +1,4 @@
-# dh-vscode-core
+# dh-in-vscode
 
 ## Setup
 

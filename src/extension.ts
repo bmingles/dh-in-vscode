@@ -4,9 +4,9 @@ import * as vscode from "vscode";
 import { initJsApi, initSession } from "./jsApi";
 import type { dh as DhType } from "./jsapi-types";
 
-// const CONNECT_COMMAND = "dh-vscode-core.connect";
-const RUN_CODE_COMMAND = "dh-vscode-core.runCode";
-const RUN_SELECTION_COMMAND = "dh-vscode-core.runSelection";
+// const CONNECT_COMMAND = "dh-in-vscode.connect";
+const RUN_CODE_COMMAND = "dh-in-vscode.runCode";
+const RUN_SELECTION_COMMAND = "dh-in-vscode.runSelection";
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const icons = {
@@ -19,9 +19,7 @@ type IconType = keyof typeof icons;
 /* eslint-enable @typescript-eslint/naming-convention */
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log(
-    'Congratulations, your extension "dh-vscode-core" is now active!'
-  );
+  console.log('Congratulations, your extension "dh-in-vscode" is now active!');
 
   let ide: DhType.IdeSession | null = null;
   const panels = new Map<string, vscode.WebviewPanel>();

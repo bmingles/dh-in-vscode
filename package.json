@@ -1,6 +1,6 @@
 {
-  "name": "dh-vscode-core",
-  "displayName": "dh-vscode-core",
+  "name": "dh-in-vscode",
+  "displayName": "Deephaven in VS Code",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -16,16 +16,16 @@
   "contributes": {
     "commands": [
       {
-        "command": "dh-vscode-core.connect",
+        "command": "dh-in-vscode.connect",
         "title": "Deephaven: Connect Server"
       },
       {
-        "command": "dh-vscode-core.runCode",
+        "command": "dh-in-vscode.runCode",
         "title": "Deephaven: Run",
         "icon": "$(run-all)"
       },
       {
-        "command": "dh-vscode-core.runSelection",
+        "command": "dh-in-vscode.runSelection",
         "title": "Deephaven: Run Selected",
         "icon": "$(run)"
       }
@@ -33,12 +33,12 @@
     "menus": {
       "editor/title": [
         {
-          "command": "dh-vscode-core.runCode",
+          "command": "dh-in-vscode.runCode",
           "group": "navigation",
           "when": "editorLangId == python && editorFocus"
         },
         {
-          "command": "dh-vscode-core.runSelection",
+          "command": "dh-in-vscode.runSelection",
           "group": "navigation",
           "when": "editorLangId == python && editorFocus && editorHasSelection"
         }
