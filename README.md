@@ -6,6 +6,8 @@ Deephaven in VS Code
 - View output in panels in vscode (relies on `embed-widget` which currently doesn't support `Deephaven UI`)
 - View output in DH (pending https://github.com/deephaven/web-client-ui/pull/1925)
 
+![Deephaven in VS Code Extension](docs/extension.png)
+
 ## Installation
 
 This extension is not yet published to the marketplace, but you can install a `.vsix` directly.
