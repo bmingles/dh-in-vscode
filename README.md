@@ -12,13 +12,16 @@ Deephaven in VS Code
 
 ## Installation
 
-This extension is not yet published to the marketplace, but you can install a `.vsix` directly.
+This extension is not yet published to the marketplace, but you can install a `.vsix` directly. To get a `.vsix`, you can either:
 
 Download one from the [releases/](releases/) folder.
 
 or
 
 Build a .vsix locally via `npm run package`
+
+Then install in vscode:
+![Install Deephaven in VS Code](docs/install.png)
 
 ## Server Connection
 

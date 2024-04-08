@@ -126,7 +126,7 @@ export function activate(context: vscode.ExtensionContext) {
         panels.set(title, panel);
       }
 
-      panels.get(title)!.webview.html = getPanelHtml(title);
+      panels.get(title)!.webview.html = getPanelHtml(serverUrl, title);
     });
   }
 
@@ -174,7 +174,11 @@ export function deactivate() {}
 //   return statusBarItem;
 // }
 
-function getPanelHtml(title: string) {
+function getEmbedWidgetUrl(serverUrl: string, title: string) {
+  return `${serverUrl}/iframe/widget/?name=${title}`;
+}
+
+function getPanelHtml(serverUrl: string, title: string) {
   return `<!DOCTYPE html>
   <html lang="en">
   <head>
@@ -191,7 +195,10 @@ function getPanelHtml(title: string) {
       </style>
   </head>
   <body>
-      <iframe src="http://localhost:4010/?name=${title}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
+      <iframe src="${getEmbedWidgetUrl(
+        serverUrl,
+        title
+      )}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
   </body>
   </html>`;
 }
