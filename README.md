@@ -6,6 +6,16 @@ Deephaven in VS Code
 - View output in panels in vscode (relies on `embed-widget` which currently doesn't support `Deephaven UI`)
 - View output in DH (pending https://github.com/deephaven/web-client-ui/pull/1925)
 
+## Installation
+
+This extension is not yet published to the marketplace, but you can install a `.vsix` directly.
+
+Download one from the [releases/](releases/) folder.
+
+or
+
+Build a .vsix locally via `npm run package`
+
 ## Run a script
 
 1. Start a DH core server at http://localhost:1000
@@ -38,3 +48,4 @@ The extension dynamically downloads and loads the DH JS API from a DH Core serve
 - Support server url configuration
 - embed-widget to support Deephaven UI
 - better panel layout support (this is limited by vscode apis)
+- open workspace folder from server

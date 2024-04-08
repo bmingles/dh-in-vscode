@@ -2,6 +2,7 @@
   "name": "dh-in-vscode",
   "displayName": "Deephaven in VS Code",
   "description": "",
+  "publisher": "bmingles",
   "repository": {
     "type": "git",
     "url": "https://github.com/bmingles/dh-in-vscode"
@@ -55,6 +56,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
+    "package": "vsce package -o releases/",
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
