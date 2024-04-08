@@ -31,7 +31,7 @@ The first time a script is run in an open workspace, the extension will:
 2. Attempt to authenticate anonymously
 3. If anonymous auth fails, prompt for `PSK`
 4. If either 3 or 4 succeeds, run the script against the server
-5. Update panels in vscode an deephaven
+5. Update panels in vscode and deephaven.
 
 On subsequent script runs, the session will be re-used and only steps 4 and 5 will run
 
