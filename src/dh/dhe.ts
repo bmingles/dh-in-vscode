@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { EnterpriseDhType as DheType } from "./dhe-types";
-import { downloadFromURL, getTempDir, polyfillDh } from "./util";
+import { downloadFromURL, getTempDir, polyfillDh } from "../util";
 
 export async function initDheApi(serverUrl: string): Promise<DheType> {
   polyfillDh();

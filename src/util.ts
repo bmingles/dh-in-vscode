@@ -87,6 +87,35 @@ export async function downloadFromURL(
   });
 }
 
+export function getEmbedWidgetUrl(serverUrl: string, title: string) {
+  return `${serverUrl}/iframe/widget/?name=${title}`;
+}
+
+export function getPanelHtml(serverUrl: string, title: string) {
+  return `<!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Deephaven</title>
+      <style>
+      iframe, html, body {
+        border: none;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      </style>
+  </head>
+  <body>
+      <iframe src="${getEmbedWidgetUrl(
+        serverUrl,
+        title
+      )}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
+  </body>
+  </html>`;
+}
+
 export function polyfillDh() {
   class Event {
     type: string;

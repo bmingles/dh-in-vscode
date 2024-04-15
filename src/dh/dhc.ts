@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { dh as DhType } from "./dhc-types";
-import { downloadFromURL, getTempDir, polyfillDh } from "./util";
+import { downloadFromURL, getTempDir, polyfillDh } from "../util";
 
 export async function initDhcApi(serverUrl: string): Promise<typeof DhType> {
   polyfillDh();
