@@ -87,11 +87,15 @@ export async function downloadFromURL(
   });
 }
 
-export function getEmbedWidgetUrl(serverUrl: string, title: string) {
-  return `${serverUrl}/iframe/widget/?name=${title}`;
+export function getEmbedWidgetUrl(
+  serverUrl: string,
+  title: string,
+  psk?: string
+) {
+  return `${serverUrl}/iframe/widget/?name=${title}${psk ? `&psk=${psk}` : ""}`;
 }
 
-export function getPanelHtml(serverUrl: string, title: string) {
+export function getPanelHtml(serverUrl: string, title: string, psk?: string) {
   return `<!DOCTYPE html>
   <html lang="en">
   <head>
@@ -110,7 +114,8 @@ export function getPanelHtml(serverUrl: string, title: string) {
   <body>
       <iframe src="${getEmbedWidgetUrl(
         serverUrl,
-        title
+        title,
+        psk
       )}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
   </body>
   </html>`;

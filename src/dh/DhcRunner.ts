@@ -9,6 +9,8 @@ export class DhcRunner extends DhRunner<
   DhType.IdeSession,
   DhType.ide.CommandResult
 > {
+  private psk?: string;
+
   protected async initApi() {
     return initDhcApi(this.serverUrl);
   }
@@ -27,12 +29,15 @@ export class DhcRunner extends DhRunner<
         const token = await vscode.window.showInputBox({
           placeHolder: "Pre-Shared Key",
           prompt: "Enter your Deephaven pre-shared key",
+          password: true,
         });
 
         ide = await initDhcSession(dh, this.serverUrl, {
           type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
           token,
         });
+
+        this.psk = token;
       } catch (err) {
         console.error(err);
       }
@@ -52,7 +57,7 @@ export class DhcRunner extends DhRunner<
   }
 
   protected getPanelHtml(title: string): string {
-    return getPanelHtml(this.serverUrl, title);
+    return getPanelHtml(this.serverUrl, title, this.psk);
   }
 }
 
