@@ -9,6 +9,9 @@ import DheRunner from "./dh/DheRunner";
 const RUN_CODE_COMMAND = "dh-in-vscode.runCode";
 const RUN_SELECTION_COMMAND = "dh-in-vscode.runSelection";
 
+type DhEnvType = "dhc" | "dhe";
+let type: DhEnvType = "dhc";
+
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "dh-in-vscode" is now active!');
 
@@ -21,8 +24,6 @@ export function activate(context: vscode.ExtensionContext) {
   const dheHost = `${dheVm}.int.illumon.com:${dhePort}`;
   const dheServerUrl = `https://${dheHost}`;
   const dheWsUrl = `wss://${dheHost}/socket`;
-
-  const type: "dhc" | "dhe" = "dhc";
 
   const outputChannel = vscode.window.createOutputChannel("Deephaven", "log");
 

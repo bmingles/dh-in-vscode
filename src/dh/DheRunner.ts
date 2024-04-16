@@ -34,7 +34,21 @@ export class DheRunner extends DhRunner<DheType, IdeSession, CommandResult> {
       client.addEventListener(dh.Client.EVENT_CONNECT, resolve)
     );
 
-    const credentials = { username: "iris", token: "iris", type: "password" };
+    const username = await vscode.window.showInputBox({ prompt: "Username" });
+    const token = await vscode.window.showInputBox({
+      prompt: "Password",
+      password: true,
+    });
+
+    if (username == null || token == null) {
+      vscode.window.showErrorMessage("Username and password are required");
+      return null;
+    }
+
+    const credentials = { username, token, type: "password" };
+
+    vscode.window.showInformationMessage("Creating Deephaven session");
+
     await client.login(credentials);
 
     const ide = new dh.Ide(client);

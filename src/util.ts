@@ -56,7 +56,7 @@ export async function downloadFromURL(
     }
 
     transporter
-      .get(url, (res) => {
+      .get(url, { timeout: 5000 }, (res) => {
         let file = "";
         res.on("data", (d) => {
           file += d;
@@ -66,8 +66,13 @@ export async function downloadFromURL(
           resolve(file);
         });
       })
+      .on("timeout", () => {
+        console.error("Failed download of url:", url);
+        reject();
+      })
       .on("error", (e) => {
         if (retries > 0) {
+          console.error("Retrying url:", url);
           setTimeout(
             () =>
               downloadFromURL(url, retries - 1, retryDelay).then(

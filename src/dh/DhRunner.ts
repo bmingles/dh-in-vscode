@@ -46,6 +46,7 @@ export abstract class DhRunner<
 
   protected async initDh() {
     try {
+      vscode.window.showInformationMessage("Initializing Deephaven API");
       this.dh = await this.initApi();
     } catch (err) {
       console.error(err);
