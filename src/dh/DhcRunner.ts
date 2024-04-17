@@ -1,7 +1,13 @@
 import * as vscode from "vscode";
 import type { dh as DhType } from "./dhc-types";
 import DhRunner from "./DhRunner";
-import { initDhcApi, initDhcSession } from "./dhc";
+import {
+  AUTH_HANDLER_TYPE_ANONYMOUS,
+  AUTH_HANDLER_TYPE_PSK,
+  createClient,
+  initDhcApi,
+  initDhcSession,
+} from "./dhc";
 import { getPanelHtml } from "../util";
 
 export class DhcRunner extends DhRunner<
@@ -19,28 +25,32 @@ export class DhcRunner extends DhRunner<
     let ide: DhType.IdeSession | null = null;
 
     try {
-      ide = await initDhcSession(dh, this.serverUrl, {
-        type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
-      });
-    } catch (err) {
-      console.error(err);
-      this.outputChannel.appendLine(`Failed to connect anonymously: ${err}`);
-      try {
+      const client = await createClient(dh, this.serverUrl);
+
+      const authConfig = new Set(
+        (await client.getAuthConfigValues()).map(([, value]) => value)
+      );
+
+      if (authConfig.has(AUTH_HANDLER_TYPE_ANONYMOUS)) {
+        ide = await initDhcSession(client, {
+          type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
+        });
+      } else if (authConfig.has(AUTH_HANDLER_TYPE_PSK)) {
         const token = await vscode.window.showInputBox({
           placeHolder: "Pre-Shared Key",
           prompt: "Enter your Deephaven pre-shared key",
           password: true,
         });
 
-        ide = await initDhcSession(dh, this.serverUrl, {
+        ide = await initDhcSession(client, {
           type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
           token,
         });
 
         this.psk = token;
-      } catch (err) {
-        console.error(err);
       }
+    } catch (err) {
+      console.error(err);
     }
 
     if (ide == null) {

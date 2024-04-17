@@ -3,6 +3,12 @@ import * as path from "node:path";
 import type { dh as DhType } from "./dhc-types";
 import { downloadFromURL, getTempDir, polyfillDh } from "../util";
 
+export const AUTH_HANDLER_TYPE_ANONYMOUS =
+  "io.deephaven.auth.AnonymousAuthenticationHandler";
+
+export const AUTH_HANDLER_TYPE_PSK =
+  "io.deephaven.authentication.psk.PskAuthenticationHandler";
+
 export async function initDhcApi(serverUrl: string): Promise<typeof DhType> {
   polyfillDh();
 
@@ -13,20 +19,22 @@ export async function initDhcApi(serverUrl: string): Promise<typeof DhType> {
   return dhc;
 }
 
-export async function initDhcSession(
-  dh: typeof DhType,
-  serverUrl: string,
-  credentials: DhType.LoginCredentials
-): Promise<DhType.IdeSession> {
+export async function createClient(dh: typeof DhType, serverUrl: string) {
   /* @ts-ignore */
   global.window.location = new URL(serverUrl);
 
-  const type = "python";
-  const client = new dh.CoreClient(serverUrl);
+  return new dh.CoreClient(serverUrl);
+}
 
+export async function initDhcSession(
+  client: DhType.CoreClient,
+  credentials: DhType.LoginCredentials
+): Promise<DhType.IdeSession> {
   await client.login(credentials);
 
   const cn = await client.getAsIdeConnection();
+
+  const type = "python";
   return cn.startSession(type);
 }
 
