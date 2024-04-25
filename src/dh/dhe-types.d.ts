@@ -1188,7 +1188,7 @@ export interface EnterpriseClient {
   // ): Promise<ConsoleServerAddress>;
   // saveQuery(query: DraftQuery, doRestart: boolean): Promise<void>;
   // createQuery(query: DraftQuery): Promise<string>;
-  // createAuthToken(key: string): Promise<string>;
+  createAuthToken(key: string): Promise<string>;
   // /** Imports the XML string as queries, and returns the query info. Does _not_ actually create them, use `saveQueries()` to save them. */
   // importQueries: (xml: string) => Promise<QueryInfo[]>;
   // /** Returns a string containing the XML of all queries specified */
