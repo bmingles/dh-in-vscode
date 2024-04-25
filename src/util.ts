@@ -160,4 +160,10 @@ export function polyfillDh() {
   global.CustomEvent = CustomEvent;
   /* @ts-ignore */
   global.WebSocket = ws;
+
+  // This is needed to mimic running in a local http browser environment when
+  // making requests to the server. This at least impacts websocket connections.
+  // Not sure if it is needed for other requests.
+  // @ts-ignore
+  global.window.location = new URL('http://localhost:8080/');
 }

@@ -23,11 +23,8 @@ export class DheRunner extends DhRunner<DheType, IdeSession, CommandResult> {
     return initDheApi(this.serverUrl);
   }
 
-  protected async createSession(dh: DheType): Promise<IdeSession | null> {
-    /* @ts-ignore */
-    global.window.location = new URL(this.serverUrl);
-
-    const client = new dh.Client(this.wsUrl);
+  protected async createSession(dhe: DheType): Promise<IdeSession | null> {
+    const dheClient = new dhe.Client(this.wsUrl);
 
     await new Promise(resolve =>
       // @ts-ignore

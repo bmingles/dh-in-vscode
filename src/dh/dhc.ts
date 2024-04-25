@@ -19,13 +19,6 @@ export async function initDhcApi(serverUrl: string): Promise<typeof DhType> {
   return dhc;
 }
 
-export async function createClient(dh: typeof DhType, serverUrl: string) {
-  /* @ts-ignore */
-  global.window.location = new URL(serverUrl);
-
-  return new dh.CoreClient(serverUrl);
-}
-
 export async function initDhcSession(
   client: DhType.CoreClient,
   credentials: DhType.LoginCredentials

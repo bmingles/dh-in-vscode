@@ -4,7 +4,6 @@ import DhRunner from './DhRunner';
 import {
   AUTH_HANDLER_TYPE_ANONYMOUS,
   AUTH_HANDLER_TYPE_PSK,
-  createClient,
   initDhcApi,
   initDhcSession,
 } from './dhc';
@@ -25,7 +24,7 @@ export class DhcRunner extends DhRunner<
     let ide: DhType.IdeSession | null = null;
 
     try {
-      const client = await createClient(dh, this.serverUrl);
+      const client = await new dh.CoreClient(this.serverUrl);
 
       const authConfig = new Set(
         (await client.getAuthConfigValues()).map(([, value]) => value)
