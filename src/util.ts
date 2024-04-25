@@ -139,6 +139,14 @@ export function polyfillDh() {
     }
   }
 
+  // Copilot will look for `window.document.currentScript` if it finds `window`.
+  // Since we are polyfilling `window` below, we also need to set `document` to
+  // avoid a "Cannot read properties of undefined (reading 'currentScript')"
+  // error when Copilot extension is activated. Note that this scenario is only
+  // hit if the polyfill runs before Copilot extension is activated.
+  /* @ts-ignore */
+  global.document = {};
+
   // Copied from https://github.com/deephaven/deephaven.io/blob/main/tools/run-examples/includeAPI.mjs
   /* @ts-ignore */
   global.self = global;
