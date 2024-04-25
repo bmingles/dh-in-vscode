@@ -1,12 +1,12 @@
-import * as vscode from "vscode";
-import type { dh as DhType } from "./dhc-types";
+import * as vscode from 'vscode';
+import type { dh as DhType } from './dhc-types';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const icons = {
-  Figure: "📈",
-  "deephaven.plot.express.DeephavenFigure": "📈",
-  Table: "⬜",
-  "deephaven.ui.Element": "✨",
+  Figure: '📈',
+  'deephaven.plot.express.DeephavenFigure': '📈',
+  Table: '⬜',
+  'deephaven.ui.Element': '✨',
 } as const;
 type IconType = keyof typeof icons;
 /* eslint-enable @typescript-eslint/naming-convention */
@@ -25,7 +25,7 @@ type CommandResultBase = {
 export abstract class DhRunner<
   TDH,
   TSession,
-  TCommandResult extends CommandResultBase
+  TCommandResult extends CommandResultBase,
 > {
   constructor(serverUrl: string, outputChannel: vscode.OutputChannel) {
     this.serverUrl = serverUrl;
@@ -46,14 +46,14 @@ export abstract class DhRunner<
 
   protected async initDh() {
     try {
-      vscode.window.showInformationMessage("Initializing Deephaven API");
+      vscode.window.showInformationMessage('Initializing Deephaven API');
       this.dh = await this.initApi();
     } catch (err) {
       console.error(err);
       this.outputChannel.appendLine(
         `Failed to initialize Deephaven API: ${err}`
       );
-      vscode.window.showErrorMessage("Failed to initialize Deephaven API");
+      vscode.window.showErrorMessage('Failed to initialize Deephaven API');
       return;
     }
 
@@ -66,7 +66,7 @@ export abstract class DhRunner<
     editor: vscode.TextEditor,
     selectionOnly = false
   ): Promise<void> {
-    if (editor.document.languageId !== "python") {
+    if (editor.document.languageId !== 'python') {
       // This should not actually happen
       console.log(`languageId '${editor.document.languageId}' not supported.`);
       return;
@@ -92,7 +92,7 @@ export abstract class DhRunner<
 
     const text = editor.document.getText(selectionRange);
 
-    console.log("Sending text to dh:", text);
+    console.log('Sending text to dh:', text);
 
     const result = await this.runCode(text);
 
@@ -100,7 +100,7 @@ export abstract class DhRunner<
       console.error(result.error);
       this.outputChannel.appendLine(result.error);
       vscode.window.showErrorMessage(
-        "An error occurred when running a command"
+        'An error occurred when running a command'
       );
 
       return;
@@ -108,13 +108,13 @@ export abstract class DhRunner<
 
     const changed = [...result.changes.created, ...result.changes.updated];
 
-    changed.forEach(({ title = "Unknown", type }, i) => {
+    changed.forEach(({ title = 'Unknown', type }, i) => {
       const icon = icons[type as IconType] ?? type;
       this.outputChannel.appendLine(`${icon} ${title}`);
 
       if (!this.panels.has(title)) {
         const panel = vscode.window.createWebviewPanel(
-          "dhPanel", // Identifies the type of the webview. Used internally
+          'dhPanel', // Identifies the type of the webview. Used internally
           title,
           vscode.ViewColumn.Two,
           {

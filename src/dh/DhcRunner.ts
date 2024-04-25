@@ -1,14 +1,14 @@
-import * as vscode from "vscode";
-import type { dh as DhType } from "./dhc-types";
-import DhRunner from "./DhRunner";
+import * as vscode from 'vscode';
+import type { dh as DhType } from './dhc-types';
+import DhRunner from './DhRunner';
 import {
   AUTH_HANDLER_TYPE_ANONYMOUS,
   AUTH_HANDLER_TYPE_PSK,
   createClient,
   initDhcApi,
   initDhcSession,
-} from "./dhc";
-import { getPanelHtml } from "../util";
+} from './dhc';
+import { getPanelHtml } from '../util';
 
 export class DhcRunner extends DhRunner<
   typeof DhType,
@@ -37,13 +37,13 @@ export class DhcRunner extends DhRunner<
         });
       } else if (authConfig.has(AUTH_HANDLER_TYPE_PSK)) {
         const token = await vscode.window.showInputBox({
-          placeHolder: "Pre-Shared Key",
-          prompt: "Enter your Deephaven pre-shared key",
+          placeHolder: 'Pre-Shared Key',
+          prompt: 'Enter your Deephaven pre-shared key',
           password: true,
         });
 
         ide = await initDhcSession(client, {
-          type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
+          type: 'io.deephaven.authentication.psk.PskAuthenticationHandler',
           token,
         });
 
@@ -54,9 +54,9 @@ export class DhcRunner extends DhRunner<
     }
 
     if (ide == null) {
-      vscode.window.showErrorMessage("Failed to connect to Deephaven server");
+      vscode.window.showErrorMessage('Failed to connect to Deephaven server');
     } else {
-      vscode.window.showInformationMessage("Connected to Deephaven server");
+      vscode.window.showInformationMessage('Connected to Deephaven server');
     }
 
     return ide;

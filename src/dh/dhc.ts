@@ -1,13 +1,13 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import type { dh as DhType } from "./dhc-types";
-import { downloadFromURL, getTempDir, polyfillDh } from "../util";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type { dh as DhType } from './dhc-types';
+import { downloadFromURL, getTempDir, polyfillDh } from '../util';
 
 export const AUTH_HANDLER_TYPE_ANONYMOUS =
-  "io.deephaven.auth.AnonymousAuthenticationHandler";
+  'io.deephaven.auth.AnonymousAuthenticationHandler';
 
 export const AUTH_HANDLER_TYPE_PSK =
-  "io.deephaven.authentication.psk.PskAuthenticationHandler";
+  'io.deephaven.authentication.psk.PskAuthenticationHandler';
 
 export async function initDhcApi(serverUrl: string): Promise<typeof DhType> {
   polyfillDh();
@@ -34,7 +34,7 @@ export async function initDhcSession(
 
   const cn = await client.getAsIdeConnection();
 
-  const type = "python";
+  const type = 'python';
   return cn.startSession(type);
 }
 
@@ -51,11 +51,11 @@ export async function initDhcSession(
 async function getDhc(serverUrl: string, outDir: string, download: boolean) {
   if (download) {
     const dhInternal = await downloadFromURL(
-      path.join(serverUrl, "jsapi/dh-internal.js")
+      path.join(serverUrl, 'jsapi/dh-internal.js')
     );
     // Convert to .cjs
     fs.writeFileSync(
-      path.join(outDir, "dh-internal.cjs"),
+      path.join(outDir, 'dh-internal.cjs'),
       dhInternal.replace(
         `export{__webpack_exports__dhinternal as dhinternal};`,
         `module.exports={dhinternal:__webpack_exports__dhinternal};`
@@ -63,10 +63,10 @@ async function getDhc(serverUrl: string, outDir: string, download: boolean) {
     );
 
     const dhCore = await downloadFromURL(
-      path.join(serverUrl, "jsapi/dh-core.js")
+      path.join(serverUrl, 'jsapi/dh-core.js')
     );
     fs.writeFileSync(
-      path.join(outDir, "dh-core.cjs"),
+      path.join(outDir, 'dh-core.cjs'),
       // Convert to .cjs
       dhCore
         .replace(
@@ -77,5 +77,5 @@ async function getDhc(serverUrl: string, outDir: string, download: boolean) {
     );
   }
 
-  return require(path.join(outDir, "dh-core.cjs"));
+  return require(path.join(outDir, 'dh-core.cjs'));
 }

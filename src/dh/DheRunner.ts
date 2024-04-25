@@ -1,11 +1,11 @@
-import * as vscode from "vscode";
-import DhRunner from "./DhRunner";
-import { initDheApi } from "./dhe";
+import * as vscode from 'vscode';
+import DhRunner from './DhRunner';
+import { initDheApi } from './dhe';
 import {
   EnterpriseDhType as DheType,
   CommandResult,
   IdeSession,
-} from "./dhe-types";
+} from './dhe-types';
 
 export class DheRunner extends DhRunner<DheType, IdeSession, CommandResult> {
   constructor(
@@ -29,32 +29,32 @@ export class DheRunner extends DhRunner<DheType, IdeSession, CommandResult> {
 
     const client = new dh.Client(this.wsUrl);
 
-    await new Promise((resolve) =>
+    await new Promise(resolve =>
       // @ts-ignore
       client.addEventListener(dh.Client.EVENT_CONNECT, resolve)
     );
 
-    const username = await vscode.window.showInputBox({ prompt: "Username" });
+    const username = await vscode.window.showInputBox({ prompt: 'Username' });
     const token = await vscode.window.showInputBox({
-      prompt: "Password",
+      prompt: 'Password',
       password: true,
     });
 
     if (username == null || token == null) {
-      vscode.window.showErrorMessage("Username and password are required");
+      vscode.window.showErrorMessage('Username and password are required');
       return null;
     }
 
-    const credentials = { username, token, type: "password" };
+    const credentials = { username, token, type: 'password' };
 
-    vscode.window.showInformationMessage("Creating Deephaven session");
+    vscode.window.showInformationMessage('Creating Deephaven session');
 
     await client.login(credentials);
 
     const ide = new dh.Ide(client);
 
     const cn = await ide.createConsole(new dh.ConsoleConfig());
-    const session = await cn.startSession("python");
+    const session = await cn.startSession('python');
 
     return session;
   }

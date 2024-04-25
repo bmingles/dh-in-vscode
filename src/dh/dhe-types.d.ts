@@ -38,23 +38,23 @@ export interface dh {
 }
 
 type VariableType = {
-  FIGURE: "Figure";
-  OTHERWIDGET: "OtherWidget";
-  PANDAS: "Pandas";
-  TABLE: "Table";
-  TABLEMAP: "TableMap";
-  TREETABLE: "TreeTable";
-  HIERARCHICALTABLE: "HierarchicalTable";
-  PARTITIONEDTABLE: "PartitionedTable";
+  FIGURE: 'Figure';
+  OTHERWIDGET: 'OtherWidget';
+  PANDAS: 'Pandas';
+  TABLE: 'Table';
+  TABLEMAP: 'TableMap';
+  TREETABLE: 'TreeTable';
+  HIERARCHICALTABLE: 'HierarchicalTable';
+  PARTITIONEDTABLE: 'PartitionedTable';
 };
 
 type ValueType = {
-  STRING: "String";
-  NUMBER: "Number";
-  DOUBLE: "Double";
-  LONG: "Long";
-  DATETIME: "Datetime";
-  BOOLEAN: "Boolean";
+  STRING: 'String';
+  NUMBER: 'Number';
+  DOUBLE: 'Double';
+  LONG: 'Long';
+  DATETIME: 'Datetime';
+  BOOLEAN: 'Boolean';
 };
 
 export type ValueTypeUnion = ValueType[keyof ValueType];
@@ -116,7 +116,7 @@ export interface TextEdit {
 
 export interface MarkupContent {
   value: string;
-  kind: "markdown" | "plaintext";
+  kind: 'markdown' | 'plaintext';
 }
 
 export interface CompletionItem {
@@ -148,7 +148,7 @@ export interface Hover {
 }
 
 export interface IdeSessionStatic {
-  EVENT_COMMANDSTARTED: "commandstarted";
+  EVENT_COMMANDSTARTED: 'commandstarted';
 }
 
 export interface WorkerConnection {
@@ -165,16 +165,16 @@ export interface IdeSession extends Evented {
   getFigure(name: string): Promise<Figure>;
   getTreeTable(name: string): Promise<TreeTable>;
   getObject(
-    definition: VariableDefinition<VariableType["TABLE"]>
+    definition: VariableDefinition<VariableType['TABLE']>
   ): Promise<Table>;
   getObject(
-    definition: VariableDefinition<VariableType["FIGURE"]>
+    definition: VariableDefinition<VariableType['FIGURE']>
   ): Promise<Figure>;
   getObject(
-    definition: VariableDefinition<VariableType["TREETABLE"]>
+    definition: VariableDefinition<VariableType['TREETABLE']>
   ): Promise<TreeTable>;
   getObject(
-    definition: VariableDefinition<VariableType["HIERARCHICALTABLE"]>
+    definition: VariableDefinition<VariableType['HIERARCHICALTABLE']>
   ): Promise<TreeTable>;
   getObject(definition: VariableDefinition): Promise<unknown>;
   onLogMessage(logHandler: (logItem: LogItem) => void): () => void;
@@ -616,7 +616,7 @@ export interface Sort {
   reverse(): Sort;
 
   readonly column: Column;
-  readonly direction: "ASC" | "DESC" | "REVERSE" | null;
+  readonly direction: 'ASC' | 'DESC' | 'REVERSE' | null;
 
   readonly isAbs: boolean;
 
@@ -661,9 +661,9 @@ export interface LayoutHints {
 }
 
 export interface SearchDisplayModeStatic {
-  SEARCH_DISPLAY_DEFAULT: "Default";
-  SEARCH_DISPLAY_HIDE: "Hide";
-  SEARCH_DISPLAY_SHOW: "Show";
+  SEARCH_DISPLAY_DEFAULT: 'Default';
+  SEARCH_DISPLAY_HIDE: 'Hide';
+  SEARCH_DISPLAY_SHOW: 'Show';
 }
 
 export interface TableStatic {
@@ -683,9 +683,9 @@ export interface TableStatic {
 }
 
 export interface ClientStatic {
-  readonly EVENT_REQUEST_FAILED: "requestfailed";
-  readonly EVENT_REQUEST_STARTED: "requeststarted";
-  readonly EVENT_REQUEST_SUCCEEDED: "requestsucceeded";
+  readonly EVENT_REQUEST_FAILED: 'requestfailed';
+  readonly EVENT_REQUEST_STARTED: 'requeststarted';
+  readonly EVENT_REQUEST_SUCCEEDED: 'requestsucceeded';
 }
 export interface Table extends TableTemplate<Table>, TableStatic {
   readonly totalSize: number;
@@ -1018,16 +1018,16 @@ export interface IdeConnection
   running(): Promise<IdeConnection>;
   disconnected(): void;
   getObject(
-    definition: VariableDefinition<VariableType["TABLE"]>
+    definition: VariableDefinition<VariableType['TABLE']>
   ): Promise<Table>;
   getObject(
-    definition: VariableDefinition<VariableType["FIGURE"]>
+    definition: VariableDefinition<VariableType['FIGURE']>
   ): Promise<Figure>;
   getObject(
-    definition: VariableDefinition<VariableType["TREETABLE"]>
+    definition: VariableDefinition<VariableType['TREETABLE']>
   ): Promise<TreeTable>;
   getObject(
-    definition: VariableDefinition<VariableType["HIERARCHICALTABLE"]>
+    definition: VariableDefinition<VariableType['HIERARCHICALTABLE']>
   ): Promise<TreeTable>;
   getObject(definition: VariableDefinition): Promise<unknown>;
   subscribeToFieldUpdates(
@@ -1039,7 +1039,7 @@ export interface ItemDetails {
   filename: string;
   basename: string;
   dirname: string;
-  type: "directory" | "file";
+  type: 'directory' | 'file';
   size: number;
   etag?: string;
 }
@@ -1138,16 +1138,16 @@ export type SerializedRowData = Record<string, unknown> & {
 
 /* eslint-disable @typescript-eslint/naming-convention */
 export type EnterpriseClientStatic = {
-  EVENT_CONNECT: "connect";
-  EVENT_DISCONNECT: "disconnect";
-  EVENT_RECONNECT: "reconnect";
-  EVENT_RECONNECT_AUTH_FAILED: "reconnectauthfailed";
-  EVENT_CONFIG_ADDED: "configadded";
-  EVENT_CONFIG_REMOVED: "configremoved";
-  EVENT_CONFIG_UPDATED: "configupdated";
+  EVENT_CONNECT: 'connect';
+  EVENT_DISCONNECT: 'disconnect';
+  EVENT_RECONNECT: 'reconnect';
+  EVENT_RECONNECT_AUTH_FAILED: 'reconnectauthfailed';
+  EVENT_CONFIG_ADDED: 'configadded';
+  EVENT_CONFIG_REMOVED: 'configremoved';
+  EVENT_CONFIG_UPDATED: 'configupdated';
 
-  LOGIN_TYPE_PASSWORD: "password";
-  LOGIN_TYPE_SAML: "saml";
+  LOGIN_TYPE_PASSWORD: 'password';
+  LOGIN_TYPE_SAML: 'saml';
 };
 
 export interface EnterpriseClientConstructor {

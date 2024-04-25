@@ -1,8 +1,8 @@
-import * as fs from "node:fs";
-import * as http from "node:http";
-import * as https from "node:https";
-import * as path from "node:path";
-import * as ws from "ws";
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as https from 'node:https';
+import * as path from 'node:path';
+import * as ws from 'ws';
 
 export class CustomEvent extends Event {
   constructor(...args: ConstructorParameters<typeof Event>) {
@@ -11,7 +11,7 @@ export class CustomEvent extends Event {
 }
 
 export function getTempDir(recreate = false) {
-  const tempDir = path.join(__dirname, "tmp");
+  const tempDir = path.join(__dirname, 'tmp');
 
   if (recreate) {
     try {
@@ -44,9 +44,9 @@ export async function downloadFromURL(
     const urlObj = new URL(url);
 
     let transporter: typeof http | typeof https;
-    if (urlObj.protocol === "http:") {
+    if (urlObj.protocol === 'http:') {
       transporter = http;
-    } else if (urlObj.protocol === "https:") {
+    } else if (urlObj.protocol === 'https:') {
       transporter = https;
     } else {
       reject(
@@ -56,23 +56,23 @@ export async function downloadFromURL(
     }
 
     transporter
-      .get(url, { timeout: 5000 }, (res) => {
-        let file = "";
-        res.on("data", (d) => {
+      .get(url, { timeout: 5000 }, res => {
+        let file = '';
+        res.on('data', d => {
           file += d;
         });
 
-        res.on("end", async () => {
+        res.on('end', async () => {
           resolve(file);
         });
       })
-      .on("timeout", () => {
-        console.error("Failed download of url:", url);
+      .on('timeout', () => {
+        console.error('Failed download of url:', url);
         reject();
       })
-      .on("error", (e) => {
+      .on('error', e => {
         if (retries > 0) {
-          console.error("Retrying url:", url);
+          console.error('Retrying url:', url);
           setTimeout(
             () =>
               downloadFromURL(url, retries - 1, retryDelay).then(
@@ -97,7 +97,7 @@ export function getEmbedWidgetUrl(
   title: string,
   psk?: string
 ) {
-  return `${serverUrl}/iframe/widget/?name=${title}${psk ? `&psk=${psk}` : ""}`;
+  return `${serverUrl}/iframe/widget/?name=${title}${psk ? `&psk=${psk}` : ''}`;
 }
 
 export function getPanelHtml(serverUrl: string, title: string, psk?: string) {
