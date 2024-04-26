@@ -41,11 +41,16 @@ export class DheRunner extends DhRunner<
       dheClient.addEventListener(dhe.Client.EVENT_CONNECT, resolve)
     );
 
-    const username = await vscode.window.showInputBox({ prompt: 'Username' });
-    const token = await vscode.window.showInputBox({
+    const username =
+      process.env.DH_IN_VSCODE_DHE_USERNAME ??
+      (await vscode.window.showInputBox({ prompt: 'Username' }));
+
+    const token =
+      process.env.DH_IN_VSCODE_DHE_PASSWORD ??
+      (await vscode.window.showInputBox({
       prompt: 'Password',
       password: true,
-    });
+      }));
 
     if (username == null || token == null) {
       vscode.window.showErrorMessage('Username and password are required');
