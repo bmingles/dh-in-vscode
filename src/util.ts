@@ -100,7 +100,7 @@ export function getEmbedWidgetUrl(
   return `${serverUrl}/iframe/widget/?name=${title}${psk ? `&psk=${psk}` : ''}`;
 }
 
-export function getPanelHtml(serverUrl: string, title: string, psk?: string) {
+export function getPanelHtml(iframeUrl: string, title: string) {
   return `<!DOCTYPE html>
   <html lang="en">
   <head>
@@ -117,11 +117,7 @@ export function getPanelHtml(serverUrl: string, title: string, psk?: string) {
       </style>
   </head>
   <body>
-      <iframe src="${getEmbedWidgetUrl(
-        serverUrl,
-        title,
-        psk
-      )}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
+      <iframe src="${iframeUrl}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
   </body>
   </html>`;
 }

@@ -7,7 +7,7 @@ import {
   initDhcApi,
   initDhcSession,
 } from './dhc';
-import { getPanelHtml } from '../util';
+import { getEmbedWidgetUrl, getPanelHtml } from '../util';
 
 export class DhcRunner extends DhRunner<
   typeof DhType,
@@ -66,7 +66,8 @@ export class DhcRunner extends DhRunner<
   }
 
   protected getPanelHtml(title: string): string {
-    return getPanelHtml(this.serverUrl, title, this.psk);
+    const iframeUrl = getEmbedWidgetUrl(this.serverUrl, title, this.psk);
+    return getPanelHtml(iframeUrl, title);
   }
 }
 
