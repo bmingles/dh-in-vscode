@@ -12,6 +12,7 @@ import { getEmbedWidgetUrl, getPanelHtml } from '../util';
 export class DhcRunner extends DhRunner<
   typeof DhType,
   DhType.IdeSession,
+  DhType.CoreClient,
   DhType.ide.CommandResult
 > {
   private psk?: string;
@@ -20,12 +21,19 @@ export class DhcRunner extends DhRunner<
     return initDhcApi(this.serverUrl);
   }
 
-  protected async createSession(dh: typeof DhType) {
+  protected async createClient(dh: typeof DhType): Promise<DhType.CoreClient> {
+    try {
+      return new dh.CoreClient(this.serverUrl);
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
+  protected async createSession(dh: typeof DhType, client: DhType.CoreClient) {
     let ide: DhType.IdeSession | null = null;
 
     try {
-      const client = await new dh.CoreClient(this.serverUrl);
-
       const authConfig = new Set(
         (await client.getAuthConfigValues()).map(([, value]) => value)
       );
@@ -68,6 +76,10 @@ export class DhcRunner extends DhRunner<
   protected getPanelHtml(title: string): string {
     const iframeUrl = getEmbedWidgetUrl(this.serverUrl, title, this.psk);
     return getPanelHtml(iframeUrl, title);
+  }
+
+  protected handlePanelMessage(): Promise<void> {
+    throw new Error('Method not implemented.');
   }
 }
 

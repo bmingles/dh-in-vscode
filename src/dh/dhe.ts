@@ -36,6 +36,17 @@ export async function getDhe(
   return iris;
 }
 
+// Get auth token from the DHE client
+export async function getAuthToken(
+  client: EnterpriseClient
+): Promise<{ type: string; token: string }> {
+  const token = await client.createAuthToken('RemoteQueryProcessor');
+  return {
+    type: 'io.deephaven.proto.auth.Token',
+    token,
+  };
+}
+
 // Copy / modified from DnDUtils.getCommunityClient
 export async function getAuthenticatedDhcWorkerClient(
   client: EnterpriseClient,
@@ -55,17 +66,10 @@ export async function getAuthenticatedDhcWorkerClient(
     const coreClient = new dh.CoreClient(grpcUrl, clientOptions);
     console.debug('Core client', coreClient, grpcUrl);
 
-    // Get auth token from the DHE client
-    const token = await client.createAuthToken('RemoteQueryProcessor');
-    console.debug('Created auth token', token, grpcUrl);
+    const authToken = await getAuthToken(client);
 
-    const loginOptions = {
-      type: 'io.deephaven.proto.auth.Token',
-      token,
-    };
-
-    console.debug('Logging in with', loginOptions, grpcUrl);
-    await coreClient.login(loginOptions);
+    console.debug('Logging in with', authToken, grpcUrl);
+    await coreClient.login(authToken);
     console.debug('Log in success', grpcUrl);
 
     return coreClient;

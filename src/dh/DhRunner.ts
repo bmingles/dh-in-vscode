@@ -25,7 +25,8 @@ type CommandResultBase = {
 export abstract class DhRunner<
   TDH,
   TSession,
-  TCommandResult extends CommandResultBase,
+  TClient,
+  TCommandResult extends CommandResultBase
 > {
   constructor(serverUrl: string, outputChannel: vscode.OutputChannel) {
     this.serverUrl = serverUrl;
@@ -36,13 +37,25 @@ export abstract class DhRunner<
   private panels = new Map<string, vscode.WebviewPanel>();
 
   protected dh: TDH | null = null;
+  protected client: TClient | null = null;
   protected serverUrl: string;
   protected session: TSession | null = null;
 
   protected abstract initApi(): Promise<TDH>;
-  protected abstract createSession(dh: TDH): Promise<TSession | null>;
+  protected abstract createClient(dh: TDH): Promise<TClient>;
+  protected abstract createSession(
+    dh: TDH,
+    client: TClient
+  ): Promise<TSession | null>;
   protected abstract runCode(text: string): Promise<TCommandResult>;
   protected abstract getPanelHtml(title: string): string;
+  protected abstract handlePanelMessage(
+    message: {
+      id: string;
+      message: string;
+    },
+    postResponseMessage: (response: unknown) => void
+  ): Promise<void>;
 
   protected async initDh() {
     try {
@@ -57,7 +70,8 @@ export abstract class DhRunner<
       return;
     }
 
-    this.session = await this.createSession(this.dh);
+    this.client = await this.createClient(this.dh);
+    this.session = await this.createSession(this.dh, this.client);
 
     this.outputChannel.show();
   }
@@ -127,6 +141,15 @@ export abstract class DhRunner<
       }
 
       this.panels.get(title)!.webview.html = this.getPanelHtml(title);
+
+      this.panels.get(title)!.webview.onDidReceiveMessage(({ data }) => {
+        this.handlePanelMessage(
+          data,
+          this.panels
+            .get(title)!
+            .webview.postMessage.bind(this.panels.get(title)!.webview)
+        );
+      });
     });
   }
 }

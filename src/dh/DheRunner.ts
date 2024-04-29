@@ -1,11 +1,17 @@
 import * as vscode from 'vscode';
 import DhRunner from './DhRunner';
-import { getAuthenticatedDhcWorkerClient, initDheApi } from './dhe';
+import {
+  getAuthToken,
+  getAuthenticatedDhcWorkerClient,
+  initDheApi,
+} from './dhe';
 import { dh as DhcType } from './dhc-types';
 import {
   EnterpriseDhType as DheType,
   CommandResult,
   IdeSession,
+  DhcConnectionDetails,
+  EnterpriseClient,
 } from './dhe-types';
 import { initDhcApi } from './dhc';
 import { getPanelHtml } from '../util';
@@ -13,6 +19,7 @@ import { getPanelHtml } from '../util';
 export class DheRunner extends DhRunner<
   DheType,
   DhcType.IdeSession,
+  EnterpriseClient,
   CommandResult
 > {
   constructor(
@@ -25,31 +32,45 @@ export class DheRunner extends DhRunner<
   }
 
   private wsUrl: string;
-  private workerUrl: string | null = null;
+  private worker: DhcConnectionDetails | null = null;
+  // private workerUrl: string | null = null;
 
   protected initApi(): Promise<DheType> {
     return initDheApi(this.serverUrl);
   }
 
+  protected async createClient(dhe: DheType): Promise<EnterpriseClient> {
+    try {
+      const client = new dhe.Client(this.wsUrl);
+
+      await new Promise(resolve =>
+        client.addEventListener(dhe.Client.EVENT_CONNECT, resolve)
+      );
+
+      return client;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
   protected async createSession(
-    dhe: DheType
+    dhe: DheType,
+    dheClient: EnterpriseClient
   ): Promise<DhcType.IdeSession | null> {
-    const dheClient = new dhe.Client(this.wsUrl);
-
-    await new Promise(resolve =>
-      // @ts-ignore
-      dheClient.addEventListener(dhe.Client.EVENT_CONNECT, resolve)
-    );
-
     const username =
       process.env.DH_IN_VSCODE_DHE_USERNAME ??
-      (await vscode.window.showInputBox({ prompt: 'Username' }));
+      (await vscode.window.showInputBox({
+        prompt: 'Username',
+        ignoreFocusOut: true,
+      }));
 
     const token =
       process.env.DH_IN_VSCODE_DHE_PASSWORD ??
       (await vscode.window.showInputBox({
-      prompt: 'Password',
-      password: true,
+        prompt: 'Password',
+        ignoreFocusOut: true,
+        password: true,
       }));
 
     if (username == null || token == null) {
@@ -76,15 +97,12 @@ export class DheRunner extends DhRunner<
       // kubernetes_worker_control: kubernetesWorkerControl,
     });
 
-    const worker = await ide.startWorker(config);
-    const { grpcUrl, ideUrl, jsApiUrl } = worker;
+    this.worker = await ide.startWorker(config);
 
-    const workerUrl = new URL(ideUrl);
-    workerUrl.searchParams.set('authProvider', 'parent');
-    this.workerUrl = workerUrl.toString();
+    const { grpcUrl, ideUrl, jsApiUrl } = this.worker;
 
-    console.log('Worker URL', this.workerUrl);
-    console.log('JS API URL', jsApiUrl);
+    console.log('Worker IDE URL:', ideUrl);
+    console.log('JS API URL:', jsApiUrl);
 
     const dhc = await initDhcApi(new URL(jsApiUrl).origin);
 
@@ -109,12 +127,76 @@ export class DheRunner extends DhRunner<
   protected runCode(text: string): Promise<CommandResult> {
     return this.session!.runCode(text);
   }
+
   protected getPanelHtml(title: string): string {
-    if (this.workerUrl == null) {
+    if (this.worker == null) {
       return '';
     }
 
-    return getPanelHtml(this.workerUrl, title);
+    const workerUrl = new URL(this.worker.ideUrl);
+    workerUrl.pathname = '/iframe/widget';
+    workerUrl.searchParams.set('name', title);
+    workerUrl.searchParams.set('authProvider', 'parent');
+
+    return getPanelHtml(workerUrl.toString(), title);
+  }
+
+  protected async handlePanelMessage(
+    {
+      id,
+      message,
+    }: {
+      id: string;
+      message: string;
+    },
+    postResponseMessage: (response: unknown) => void
+  ): Promise<void> {
+    console.log('Received panel message:', message, this.worker);
+
+    if (this.client == null || this.worker == null) {
+      return;
+    }
+
+    if (message === 'io.deephaven.message.LoginOptions.request') {
+      const authToken = await getAuthToken(this.client);
+
+      const response = {
+        message: 'vscode-ext.loginOptions',
+        payload: {
+          id,
+          payload: authToken,
+        },
+        targetOrigin: this.worker.ideUrl,
+      };
+
+      console.log('Posting LoginOptions response:', response);
+
+      postResponseMessage(response);
+
+      return;
+    }
+
+    if (message === 'io.deephaven.message.SessionDetails.request') {
+      const response = {
+        message: 'vscode-ext.sessionDetails',
+        payload: {
+          id,
+          payload: {
+            workerName: this.worker.workerName,
+            processInfoId: this.worker.processInfoId,
+          },
+        },
+        targetOrigin: this.worker.ideUrl,
+      };
+
+      console.log('Posting SessionDetails response:', response);
+
+      postResponseMessage(response);
+
+      return;
+    }
+
+    console.log('Unknown message type', message);
   }
 }
 
