@@ -33,6 +33,10 @@
         "command": "dh-in-vscode.runSelection",
         "title": "Deephaven: Run Selected",
         "icon": "$(run)"
+      },
+      {
+        "command": "dh-in-vscode.selectConnection",
+        "title": "Deephaven: Select Connection"
       }
     ],
     "menus": {

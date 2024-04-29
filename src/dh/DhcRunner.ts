@@ -60,12 +60,6 @@ export class DhcRunner extends DhRunner<
       console.error(err);
     }
 
-    if (ide == null) {
-      vscode.window.showErrorMessage('Failed to connect to Deephaven server');
-    } else {
-      vscode.window.showInformationMessage('Connected to Deephaven server');
-    }
-
     return ide;
   }
 

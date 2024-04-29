@@ -57,7 +57,11 @@ export abstract class DhRunner<
     postResponseMessage: (response: unknown) => void
   ): Promise<void>;
 
-  protected async initDh() {
+  public get isInitialized(): boolean {
+    return this.session != null;
+  }
+
+  public async initDh() {
     try {
       vscode.window.showInformationMessage('Initializing Deephaven API');
       this.dh = await this.initApi();
@@ -72,6 +76,12 @@ export abstract class DhRunner<
 
     this.client = await this.createClient(this.dh);
     this.session = await this.createSession(this.dh, this.client);
+
+    if (this.session == null) {
+      vscode.window.showErrorMessage('Failed to connect to Deephaven server');
+    } else {
+      vscode.window.showInformationMessage('Connected to Deephaven server');
+    }
 
     this.outputChannel.show();
   }
