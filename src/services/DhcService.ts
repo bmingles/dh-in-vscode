@@ -1,15 +1,15 @@
 import * as vscode from 'vscode';
-import type { dh as DhType } from './dhc-types';
-import DhRunner from './DhRunner';
+import type { dh as DhType } from '../dh/dhc-types';
+import DhService from './DhService';
 import {
   AUTH_HANDLER_TYPE_ANONYMOUS,
   AUTH_HANDLER_TYPE_PSK,
   initDhcApi,
   initDhcSession,
-} from './dhc';
+} from '../dh/dhc';
 import { getEmbedWidgetUrl, getPanelHtml } from '../util';
 
-export class DhcRunner extends DhRunner<
+export class DhcService extends DhService<
   typeof DhType,
   DhType.IdeSession,
   DhType.CoreClient,
@@ -77,4 +77,4 @@ export class DhcRunner extends DhRunner<
   }
 }
 
-export default DhcRunner;
+export default DhcService;

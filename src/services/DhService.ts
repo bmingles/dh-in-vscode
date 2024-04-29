@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { dh as DhType } from './dhc-types';
+import type { dh as DhType } from '../dh/dhc-types';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const icons = {
@@ -22,7 +22,7 @@ type CommandResultBase = {
   error: string;
 };
 
-export abstract class DhRunner<
+export abstract class DhService<
   TDH,
   TSession,
   TClient,
@@ -164,4 +164,4 @@ export abstract class DhRunner<
   }
 }
 
-export default DhRunner;
+export default DhService;

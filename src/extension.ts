@@ -2,8 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { getTempDir } from './util';
-import DhcRunner from './dh/DhcRunner';
-import DheRunner from './dh/DheRunner';
+import { DhcService, DheService } from './services';
 
 // const CONNECT_COMMAND = "dh-in-vscode.connect";
 const RUN_CODE_COMMAND = 'dh-in-vscode.runCode';
@@ -24,10 +23,10 @@ const connectionOptions: ConnectionOption[] = [dhcConnection, dheConnection];
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "dh-in-vscode" is now active!');
 
-  let dhcRunner: DhcRunner;
-  let dheRunner: DheRunner;
+  let dhcRunner: DhcService;
+  let dheRunner: DheService;
   let selectedConnection!: ConnectionOption;
-  let selectedRunner!: DhcRunner | DheRunner;
+  let selectedRunner!: DhcService | DheService;
 
   // DHC
   const dhcServerUrl = 'http://localhost:10000';
@@ -94,9 +93,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     selectedRunner =
       option.type === 'DHC'
-        ? (dhcRunner = dhcRunner ?? new DhcRunner(dhcServerUrl, outputChannel))
+        ? (dhcRunner = dhcRunner ?? new DhcService(dhcServerUrl, outputChannel))
         : (dheRunner =
-            dheRunner ?? new DheRunner(dheServerUrl, outputChannel, dheWsUrl));
+            dheRunner ?? new DheService(dheServerUrl, outputChannel, dheWsUrl));
 
     if (selectedRunner.isInitialized) {
       vscode.window.showInformationMessage(

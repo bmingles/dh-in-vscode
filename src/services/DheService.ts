@@ -1,22 +1,22 @@
 import * as vscode from 'vscode';
-import DhRunner from './DhRunner';
+import DhService from './DhService';
 import {
   getAuthToken,
   getAuthenticatedDhcWorkerClient,
   initDheApi,
-} from './dhe';
-import { dh as DhcType } from './dhc-types';
+} from '../dh/dhe';
+import { dh as DhcType } from '../dh/dhc-types';
 import {
   EnterpriseDhType as DheType,
   CommandResult,
   IdeSession,
   DhcConnectionDetails,
   EnterpriseClient,
-} from './dhe-types';
-import { initDhcApi } from './dhc';
+} from '../dh/dhe-types';
+import { initDhcApi } from '../dh/dhc';
 import { getPanelHtml } from '../util';
 
-export class DheRunner extends DhRunner<
+export class DheService extends DhService<
   DheType,
   DhcType.IdeSession,
   EnterpriseClient,
@@ -200,4 +200,4 @@ export class DheRunner extends DhRunner<
   }
 }
 
-export default DheRunner;
+export default DheService;
