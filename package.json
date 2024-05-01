@@ -15,6 +15,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onFileSystem:dhfs",
     "onLanguage:python"
   ],
   "main": "./out/extension.js",
