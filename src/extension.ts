@@ -2,7 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { getTempDir } from './util';
-import { DhcService, DheService } from './services';
+import { DhcService, DheService, WebClientDataFsService } from './services';
+import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
 
 // const CONNECT_COMMAND = "dh-in-vscode.connect";
 const RUN_CODE_COMMAND = 'dh-in-vscode.runCode';
@@ -23,10 +24,10 @@ const connectionOptions: ConnectionOption[] = [dhcConnection, dheConnection];
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "dh-in-vscode" is now active!');
 
-  let dhcRunner: DhcService;
-  let dheRunner: DheService;
+  let dhcService: DhcService;
+  let dheService: DheService;
   let selectedConnection!: ConnectionOption;
-  let selectedRunner!: DhcService | DheService;
+  let selectedDhService!: DhcService | DheService;
 
   // DHC
   const dhcServerUrl = 'http://localhost:10000';
@@ -39,9 +40,24 @@ export function activate(context: vscode.ExtensionContext) {
   const dheWsUrl = `wss://${dheHost}/socket`;
 
   const outputChannel = vscode.window.createOutputChannel('Deephaven', 'log');
+  outputChannel.appendLine('Deephaven extension activated');
+  outputChannel.show();
 
   // recreate tmp dir that will be used to dowload JS Apis
   getTempDir(true /*recreate*/);
+
+  // TBD: Can this be initialized when DHE is connected?
+  if (dheServerUrl) {
+    dheService = new DheService(dheServerUrl, outputChannel, dheWsUrl);
+    const fsService = new WebClientDataFsService(dheService.buildFsMap);
+    const webClientDataFs = new WebClientDataFsProvider(dheService, fsService);
+
+    context.subscriptions.push(
+      vscode.workspace.registerFileSystemProvider('dhfs', webClientDataFs, {
+        isCaseSensitive: true,
+      })
+    );
+  }
 
   const runCodeCmd = vscode.commands.registerTextEditorCommand(
     RUN_CODE_COMMAND,
@@ -50,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
         setSelectedConnection(dhcConnection);
       }
 
-      selectedRunner.runEditorCode(editor);
+      selectedDhService.runEditorCode(editor);
     }
   );
 
@@ -61,7 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
         setSelectedConnection(dhcConnection);
       }
 
-      selectedRunner.runEditorCode(editor, true);
+      selectedDhService.runEditorCode(editor, true);
     }
   );
 
@@ -91,18 +107,36 @@ export function activate(context: vscode.ExtensionContext) {
     selectedConnection = option;
     connectStatusBarItem.text = getConnectText(option.type);
 
-    selectedRunner =
+    selectedDhService =
       option.type === 'DHC'
-        ? (dhcRunner = dhcRunner ?? new DhcService(dhcServerUrl, outputChannel))
-        : (dheRunner =
-            dheRunner ?? new DheService(dheServerUrl, outputChannel, dheWsUrl));
+        ? (dhcService =
+            dhcService ?? new DhcService(dhcServerUrl, outputChannel))
+        : (dheService =
+            dheService ??
+            new DheService(dheServerUrl, outputChannel, dheWsUrl));
 
-    if (selectedRunner.isInitialized) {
+    if (selectedDhService.isInitialized) {
       vscode.window.showInformationMessage(
         `Connected to ${selectedConnection.type} server`
       );
     } else {
-      await selectedRunner.initDh();
+      if (option.type === 'DHC') {
+        await selectedDhService.initDh();
+      } else {
+        // if (
+        //   vscode.workspace.workspaceFolders?.[0].uri.toString() !==
+        //   vscode.Uri.parse('dhfs:/').toString()
+        // ) {
+        // Note that this will cause extension to re-activate which means we
+        // lose any state, so don't bother calling `initDh()` here. It will get
+        // called lazily after extension is re-activated and the dhfs starts
+        // building its tree.
+        vscode.workspace.updateWorkspaceFolders(0, 0, {
+          uri: vscode.Uri.parse('dhfs:/'),
+          name: 'Deephaven',
+        });
+        // }
+      }
     }
   }
 }

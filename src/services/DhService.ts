@@ -35,6 +35,9 @@ export abstract class DhService<
 
   protected outputChannel: vscode.OutputChannel;
   private panels = new Map<string, vscode.WebviewPanel>();
+  private cachedCreateClient: Promise<TClient> | null = null;
+  private cachedCreateSession: Promise<TSession | null> | null = null;
+  private cachedInitApi: Promise<TDH> | null = null;
 
   protected dh: TDH | null = null;
   protected client: TClient | null = null;
@@ -63,8 +66,11 @@ export abstract class DhService<
 
   public async initDh() {
     try {
-      vscode.window.showInformationMessage('Initializing Deephaven API');
-      this.dh = await this.initApi();
+      if (this.cachedInitApi == null) {
+        vscode.window.showInformationMessage('Initializing Deephaven API');
+        this.cachedInitApi = this.initApi();
+      }
+      this.dh = await this.cachedInitApi;
     } catch (err) {
       console.error(err);
       this.outputChannel.appendLine(
@@ -74,16 +80,23 @@ export abstract class DhService<
       return;
     }
 
-    this.client = await this.createClient(this.dh);
-    this.session = await this.createSession(this.dh, this.client);
+    if (this.cachedCreateClient == null) {
+      this.outputChannel.appendLine('Creating client.');
+      this.cachedCreateClient = this.createClient(this.dh);
+    }
+    this.client = await this.cachedCreateClient;
+
+    if (this.cachedCreateSession == null) {
+      this.outputChannel.appendLine('Creating session.');
+      this.cachedCreateSession = this.createSession(this.dh, this.client);
+    }
+    this.session = await this.cachedCreateSession;
 
     if (this.session == null) {
       vscode.window.showErrorMessage('Failed to connect to Deephaven server');
     } else {
       vscode.window.showInformationMessage('Connected to Deephaven server');
     }
-
-    this.outputChannel.show();
   }
 
   public async runEditorCode(
