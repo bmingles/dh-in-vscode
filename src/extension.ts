@@ -16,11 +16,6 @@ interface ConnectionOption {
   label: string;
 }
 
-const dhcConnection: ConnectionOption = { type: 'DHC', label: 'DHC' };
-const dheConnection: ConnectionOption = { type: 'DHE', label: 'DHE' };
-
-const connectionOptions: ConnectionOption[] = [dhcConnection, dheConnection];
-
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "dh-in-vscode" is now active!');
 
@@ -30,7 +25,9 @@ export function activate(context: vscode.ExtensionContext) {
   let selectedDhService!: DhcService | DheService;
 
   // DHC
-  const dhcServerUrl = 'http://localhost:10000';
+  const dhcPort = 10000;
+  const dhcHost = `localhost:${dhcPort}`;
+  const dhcServerUrl = `http://${dhcHost}`;
 
   // DHE
   const dhePort = 8123;
@@ -38,6 +35,12 @@ export function activate(context: vscode.ExtensionContext) {
   const dheHost = `${dheVm}.int.illumon.com:${dhePort}`;
   const dheServerUrl = `https://${dheHost}`;
   const dheWsUrl = `wss://${dheHost}/socket`;
+
+  const connectionOptions: ConnectionOption[] = [
+    { type: 'DHC', label: `DHC: ${dhcHost}` },
+    { type: 'DHE', label: `DHE: ${dheHost}` },
+  ];
+  const defaultConnection = connectionOptions[0];
 
   const outputChannel = vscode.window.createOutputChannel('Deephaven', 'log');
   outputChannel.appendLine('Deephaven extension activated');
@@ -63,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
     RUN_CODE_COMMAND,
     editor => {
       if (!selectedConnection) {
-        setSelectedConnection(dhcConnection);
+        setSelectedConnection(defaultConnection);
       }
 
       selectedDhService.runEditorCode(editor);
@@ -74,7 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
     RUN_SELECTION_COMMAND,
     async editor => {
       if (!selectedConnection) {
-        setSelectedConnection(dhcConnection);
+        setSelectedConnection(defaultConnection);
       }
 
       selectedDhService.runEditorCode(editor, true);
@@ -84,7 +87,10 @@ export function activate(context: vscode.ExtensionContext) {
   const selectionConnectionCmd = vscode.commands.registerCommand(
     SELECT_CONNECTION_COMMAND,
     async () => {
-      const result = await createDHQuickPick(selectedConnection);
+      const result = await createDHQuickPick(
+        connectionOptions,
+        selectedConnection
+      );
       if (!result) {
         return;
       }
@@ -103,10 +109,17 @@ export function activate(context: vscode.ExtensionContext) {
     connectStatusBarItem
   );
 
+  const storedConnection =
+    context.globalState.get<ConnectionOption>('selectedConnection');
+
+  if (storedConnection) {
+    setSelectedConnection(storedConnection);
+  }
+
   async function setSelectedConnection(option: ConnectionOption) {
     selectedConnection = option;
-    connectStatusBarItem.text = getConnectText(option.type);
-
+    connectStatusBarItem.text = getConnectText(option.label);
+    console.log(connectStatusBarItem.text);
     selectedDhService =
       option.type === 'DHC'
         ? (dhcService =
@@ -127,10 +140,15 @@ export function activate(context: vscode.ExtensionContext) {
         //   vscode.workspace.workspaceFolders?.[0].uri.toString() !==
         //   vscode.Uri.parse('dhfs:/').toString()
         // ) {
+
         // Note that this will cause extension to re-activate which means we
         // lose any state, so don't bother calling `initDh()` here. It will get
         // called lazily after extension is re-activated and the dhfs starts
         // building its tree.
+
+        // Store our selected connection so we can use it when extension re-activates
+        context.globalState.update('selectedConnection', option);
+
         vscode.workspace.updateWorkspaceFolders(0, 0, {
           uri: vscode.Uri.parse('dhfs:/'),
           name: `DHE:${dheVm}`,
@@ -143,7 +161,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
-async function createDHQuickPick(selectedOption?: ConnectionOption) {
+async function createDHQuickPick(
+  connectionOptions: ConnectionOption[],
+  selectedOption?: ConnectionOption
+) {
   // const qp = vscode.window.createQuickPick<ConnectionOption>();
   // qp.items = connectionOptions;
 
@@ -182,6 +203,6 @@ function createConnectStatusBarItem() {
   return statusBarItem;
 }
 
-function getConnectText(connectionType: ConnectionType | 'Deephaven') {
-  return `$(debug-disconnect) ${connectionType}`;
+function getConnectText(connectionDisplay: string | 'Deephaven') {
+  return `$(debug-disconnect) ${connectionDisplay.trim()}`;
 }
