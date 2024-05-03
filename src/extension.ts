@@ -34,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   // DHE
   const dhePort = 8123;
-  const dheVm = 'bmingles-vm-f1';
+  const dheVm = 'dev-vplus';
   const dheHost = `${dheVm}.int.illumon.com:${dhePort}`;
   const dheServerUrl = `https://${dheHost}`;
   const dheWsUrl = `wss://${dheHost}/socket`;
@@ -133,7 +133,7 @@ export function activate(context: vscode.ExtensionContext) {
         // building its tree.
         vscode.workspace.updateWorkspaceFolders(0, 0, {
           uri: vscode.Uri.parse('dhfs:/'),
-          name: 'Deephaven',
+          name: `DHE:${dheVm}`,
         });
         // }
       }

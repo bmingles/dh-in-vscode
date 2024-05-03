@@ -61,7 +61,7 @@ export abstract class DhService<
   ): Promise<void>;
 
   public get isInitialized(): boolean {
-    return this.session != null;
+    return this.cachedInitApi != null;
   }
 
   public async initDh() {
