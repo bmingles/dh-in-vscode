@@ -118,6 +118,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   async function setSelectedConnection(option: ConnectionOption) {
     selectedConnection = option;
+
+    // Store our selected connection so we can use it when extension re-activates
+    context.globalState.update('selectedConnection', selectedConnection);
+
     connectStatusBarItem.text = getConnectText(option.label);
     console.log(connectStatusBarItem.text);
     selectedDhService =
@@ -145,10 +149,6 @@ export function activate(context: vscode.ExtensionContext) {
         // lose any state, so don't bother calling `initDh()` here. It will get
         // called lazily after extension is re-activated and the dhfs starts
         // building its tree.
-
-        // Store our selected connection so we can use it when extension re-activates
-        context.globalState.update('selectedConnection', option);
-
         vscode.workspace.updateWorkspaceFolders(0, 0, {
           uri: vscode.Uri.parse('dhfs:/'),
           name: `DHE:${dheVm}`,
@@ -197,7 +197,7 @@ function createConnectStatusBarItem() {
     100
   );
   statusBarItem.command = SELECT_CONNECTION_COMMAND;
-  statusBarItem.text = getConnectText('Deephaven');
+  statusBarItem.text = getConnectText('Deephaven: Disconnected');
   statusBarItem.show();
 
   return statusBarItem;
