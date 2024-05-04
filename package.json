@@ -20,11 +20,33 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Deephaven in VS Code",
+      "properties": {
+        "dh-in-vscode.core-servers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "http://localhost:10000/"
+          ],
+          "description": "Deephaven Core servers"
+        },
+        "dh-in-vscode.enterprise-servers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "https://dev-vplus.int.illumon.com:8123/",
+            "https://dev-grizzy.int.illumon.com:8123/"
+          ],
+          "description": "Deephaven Enterprise servers"
+        }
+      }
+    },
     "commands": [
-      {
-        "command": "dh-in-vscode.connect",
-        "title": "Deephaven: Connect Server"
-      },
       {
         "command": "dh-in-vscode.runCode",
         "title": "Deephaven: Run",

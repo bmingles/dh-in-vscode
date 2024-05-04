@@ -5,15 +5,27 @@ import { getTempDir } from './util';
 import { DhcService, DheService, WebClientDataFsService } from './services';
 import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
 
-// const CONNECT_COMMAND = "dh-in-vscode.connect";
 const RUN_CODE_COMMAND = 'dh-in-vscode.runCode';
 const RUN_SELECTION_COMMAND = 'dh-in-vscode.runSelection';
 const SELECT_CONNECTION_COMMAND = 'dh-in-vscode.selectConnection';
+
+const config = vscode.workspace.getConfiguration('dh-in-vscode');
 
 type ConnectionType = 'DHC' | 'DHE';
 interface ConnectionOption {
   type: ConnectionType;
   label: string;
+  url: string;
+}
+
+function getEnterpriseWsUrl(serverUrl: string): string {
+  const url = new URL('/socket', serverUrl);
+  if (url.protocol === 'http:') {
+    url.protocol = 'ws:';
+  } else {
+    url.protocol = 'wss:';
+  }
+  return url.href;
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -25,21 +37,22 @@ export function activate(context: vscode.ExtensionContext) {
   let selectedDhService!: DhcService | DheService;
 
   // DHC
-  const dhcPort = 10000;
-  const dhcHost = `localhost:${dhcPort}`;
-  const dhcServerUrl = `http://${dhcHost}`;
-
-  // DHE
-  const dhePort = 8123;
-  const dheVm = 'dev-vplus';
-  const dheHost = `${dheVm}.int.illumon.com:${dhePort}`;
-  const dheServerUrl = `https://${dheHost}`;
-  const dheWsUrl = `wss://${dheHost}/socket`;
+  const dhcServerUrls = config.get<string[]>('core-servers') ?? [];
+  const dheServerUrls = config.get<string[]>('enterprise-servers') ?? [];
 
   const connectionOptions: ConnectionOption[] = [
-    { type: 'DHC', label: `DHC: ${dhcHost}` },
-    { type: 'DHE', label: `DHE: ${dheHost}` },
+    ...dhcServerUrls.map(url => ({
+      type: 'DHC' as ConnectionType,
+      label: `DHC: ${url}`,
+      url,
+    })),
+    ...dheServerUrls.map(url => ({
+      type: 'DHE' as ConnectionType,
+      label: `DHE: ${url}`,
+      url,
+    })),
   ];
+
   const defaultConnection = connectionOptions[0];
 
   const outputChannel = vscode.window.createOutputChannel('Deephaven', 'log');
@@ -50,17 +63,17 @@ export function activate(context: vscode.ExtensionContext) {
   getTempDir(true /*recreate*/);
 
   // TBD: Can this be initialized when DHE is connected?
-  if (dheServerUrl) {
-    dheService = new DheService(dheServerUrl, outputChannel, dheWsUrl);
-    const fsService = new WebClientDataFsService(dheService.buildFsMap);
-    const webClientDataFs = new WebClientDataFsProvider(dheService, fsService);
+  // if (dheServerUrl) {
+  //   dheService = new DheService(dheServerUrl, outputChannel, dheWsUrl);
+  //   const fsService = new WebClientDataFsService(dheService.buildFsMap);
+  //   const webClientDataFs = new WebClientDataFsProvider(dheService, fsService);
 
-    context.subscriptions.push(
-      vscode.workspace.registerFileSystemProvider('dhfs', webClientDataFs, {
-        isCaseSensitive: true,
-      })
-    );
-  }
+  //   context.subscriptions.push(
+  //     vscode.workspace.registerFileSystemProvider('dhfs', webClientDataFs, {
+  //       isCaseSensitive: true,
+  //     })
+  //   );
+  // }
 
   const runCodeCmd = vscode.commands.registerTextEditorCommand(
     RUN_CODE_COMMAND,
@@ -126,11 +139,14 @@ export function activate(context: vscode.ExtensionContext) {
     console.log(connectStatusBarItem.text);
     selectedDhService =
       option.type === 'DHC'
-        ? (dhcService =
-            dhcService ?? new DhcService(dhcServerUrl, outputChannel))
+        ? (dhcService = dhcService ?? new DhcService(option.url, outputChannel))
         : (dheService =
             dheService ??
-            new DheService(dheServerUrl, outputChannel, dheWsUrl));
+            new DheService(
+              option.url,
+              outputChannel,
+              getEnterpriseWsUrl(option.url)
+            ));
 
     if (selectedDhService.isInitialized) {
       vscode.window.showInformationMessage(
@@ -151,7 +167,7 @@ export function activate(context: vscode.ExtensionContext) {
         // building its tree.
         vscode.workspace.updateWorkspaceFolders(0, 0, {
           uri: vscode.Uri.parse('dhfs:/'),
-          name: `DHE:${dheVm}`,
+          name: `DHE:${option.url}`,
         });
         // }
       }
