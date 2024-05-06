@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 import { DebouncedEventQueue } from './DebouncedEventQueue';
-import { DheService, WebClientDataFsService } from '../services';
-import { WebClientDataFileNode } from '../dh/dhe-fs-types';
-import { getWorkspaceRowById } from '../dh/dhe';
+import { DheService } from '../services';
+import { WebClientDataFileNode, WebClientDataFsMap } from '../dh/dhe-fs-types';
+import { CacheService } from '../services/CacheService';
 
 export class WebClientDataFsProvider implements vscode.FileSystemProvider {
-  constructor(dheService: DheService, fsService: WebClientDataFsService) {
+  constructor(dheService: DheService) {
     this.dheService = dheService;
-    this.fsService = fsService;
+    this.fsCache = new CacheService(() => dheService.buildFsMap());
   }
 
   private readonly dheService: DheService;
-  private readonly fsService: WebClientDataFsService;
+  private readonly fsCache: CacheService<WebClientDataFsMap>;
 
   private _eventQueue = new DebouncedEventQueue();
 
@@ -49,7 +49,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
 
     // return [];
 
-    const { dirMap } = await this.fsService.getFsMap();
+    const { dirMap } = await this.fsCache.get();
 
     const children = dirMap.get(uri.path) ?? [];
 
@@ -68,7 +68,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
 
   async readFile(uri: vscode.Uri): Promise<Uint8Array> {
     console.log('readFile:', uri.path);
-    const { pathMap } = await this.fsService.getFsMap();
+    const { pathMap } = await this.fsCache.get();
 
     const node = pathMap.get(uri.path);
     if (node?.type === 'File') {
@@ -98,7 +98,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     }
     // throw vscode.FileSystemError.FileNotFound(uri);
 
-    const { dirMap, pathMap } = await this.fsService.getFsMap();
+    const { dirMap, pathMap } = await this.fsCache.get();
 
     if (dirMap.has(uri.path)) {
       return {
@@ -137,7 +137,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     options: { readonly create: boolean; readonly overwrite: boolean }
   ): Promise<void> {
     console.log('writeFile:', uri.path);
-    const { pathMap } = await this.fsService.getFsMap();
+    const { pathMap } = await this.fsCache.get();
 
     const doc = pathMap.get(uri.path);
     if (doc == null || doc.type !== 'File') {

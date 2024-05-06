@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { getTempDir } from './util';
-import { DhcService, DheService, WebClientDataFsService } from './services';
+import { DhcService, DheService } from './services';
 import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
 
 // const CONNECT_COMMAND = "dh-in-vscode.connect";
@@ -52,8 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
   // TBD: Can this be initialized when DHE is connected?
   if (dheServerUrl) {
     dheService = new DheService(dheServerUrl, outputChannel, dheWsUrl);
-    const fsService = new WebClientDataFsService(dheService.buildFsMap);
-    const webClientDataFs = new WebClientDataFsProvider(dheService, fsService);
+    const webClientDataFs = new WebClientDataFsProvider(dheService);
 
     context.subscriptions.push(
       vscode.workspace.registerFileSystemProvider('dhfs', webClientDataFs, {
