@@ -26,31 +26,16 @@ export function activate(context: vscode.ExtensionContext) {
   let selectedConnectionUrl: string;
   let selectedDhService!: DhcService | DheService;
 
-  // DHC
-  const dhcPort = 10000;
-  const dhcHost = `localhost:${dhcPort}`;
-  const dhcServerUrl = `http://${dhcHost}`;
+  const config = vscode.workspace.getConfiguration('dh-in-vscode');
 
-  // DHE
-  // const dhePort = 8123;
-  // const dheVm = 'bmingles-vm-f1';
-  // const dheHost = `${dheVm}.int.illumon.com:${dhePort}`;
-  // const dheServerUrl = `https://${dheHost}`;
-
-  const dheServerUrls = [
-    `https://dev-vplus.int.illumon.com:8123`,
-    'https://dev-grizzy.int.illumon.com:8123',
-    `https://bmingles-vm-f1.int.illumon.com:8123`,
-  ];
+  const dhcServerUrls = config.get<string[]>('core-servers') ?? [];
+  const dheServerUrls = config.get<string[]>('enterprise-servers') ?? [];
 
   const connectionOptions: ConnectionOption[] = [
-    { type: 'DHC', label: `DHC: ${dhcHost}`, url: dhcServerUrl },
-    ...dheServerUrls.map(dheServerUrl => ({
-      type: 'DHE' as 'DHE',
-      label: `DHE: ${dheServerUrl}`,
-      url: dheServerUrl,
-    })),
+    ...dhcServerUrls.map(createOption('DHC')),
+    ...dheServerUrls.map(createOption('DHE')),
   ];
+
   const defaultConnection = connectionOptions[0];
 
   const outputChannel = vscode.window.createOutputChannel('Deephaven', 'log');
@@ -242,6 +227,10 @@ function createConnectStatusBarItem() {
   statusBarItem.show();
 
   return statusBarItem;
+}
+
+function createOption(type: ConnectionType) {
+  return (url: string) => ({ type, label: `${type}: ${url}`, url });
 }
 
 function getConnectText(connectionDisplay: string | 'Deephaven') {
