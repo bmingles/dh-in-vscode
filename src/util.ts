@@ -97,6 +97,7 @@ export function getEmbedWidgetUrl(
   title: string,
   psk?: string
 ) {
+  serverUrl = serverUrl.replace(/\/$/, '');
   return `${serverUrl}/iframe/widget/?name=${title}${psk ? `&psk=${psk}` : ''}`;
 }
 
@@ -158,6 +159,14 @@ export function getPanelHtml(iframeUrl: string, title: string) {
       <iframe id="content-iframe" src="${iframeUrl}&cachebust=${new Date().getTime()}" title="${title}"></iframe>
   </body>
   </html>`;
+}
+
+export function normalizeUrl(url: string | null) {
+  if (url == null) {
+    return url;
+  }
+
+  return url.endsWith('/') ? url : `${url}/`;
 }
 
 export function polyfillDh() {

@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 import DhService from './DhService';
 import {
+  buildFsMap,
   getAuthToken,
   getAuthenticatedDhcWorkerClient,
+  getWebClientData,
+  getWorkspaceRowById,
+  getWsUrl,
   initDheApi,
 } from '../dh/dhe';
 import { dh as DhcType } from '../dh/dhc-types';
@@ -12,9 +16,12 @@ import {
   IdeSession,
   DhcConnectionDetails,
   EnterpriseClient,
+  QueryInfo,
+  DeserializedRowData,
 } from '../dh/dhe-types';
 import { initDhcApi } from '../dh/dhc';
 import { getPanelHtml } from '../util';
+import { WebClientDataFsMap } from '../dh/dhe-fs-types';
 
 export class DheService extends DhService<
   DheType,
@@ -22,13 +29,9 @@ export class DheService extends DhService<
   EnterpriseClient,
   CommandResult
 > {
-  constructor(
-    serverUrl: string,
-    outputChannel: vscode.OutputChannel,
-    wsUrl: string
-  ) {
+  constructor(serverUrl: string, outputChannel: vscode.OutputChannel) {
     super(serverUrl, outputChannel);
-    this.wsUrl = wsUrl;
+    this.wsUrl = getWsUrl(serverUrl);
   }
 
   private wsUrl: string;
@@ -97,13 +100,16 @@ export class DheService extends DhService<
       // kubernetes_worker_control: kubernetesWorkerControl,
     });
 
+    this.outputChannel.appendLine('Starting DHC worker');
     this.worker = await ide.startWorker(config);
 
     const { grpcUrl, ideUrl, jsApiUrl } = this.worker;
+    this.outputChannel.appendLine(`DHC worker started: ${ideUrl}`);
 
     console.log('Worker IDE URL:', ideUrl);
     console.log('JS API URL:', jsApiUrl);
 
+    this.outputChannel.appendLine('Initializing DHC API');
     const dhc = await initDhcApi(new URL(jsApiUrl).origin);
 
     const dhcClient = await getAuthenticatedDhcWorkerClient(
@@ -197,6 +203,33 @@ export class DheService extends DhService<
     }
 
     console.log('Unknown message type', message);
+  }
+
+  public buildFsMap = async (): Promise<WebClientDataFsMap> => {
+    if (this.dh == null || this.client == null) {
+      await this.initDh();
+    }
+
+    return buildFsMap(this.dh!, this.client!);
+  };
+
+  public async getWebClientData(): Promise<QueryInfo> {
+    if (this.dh == null || this.client == null) {
+      throw new Error('Deephaven API not initialized');
+    }
+
+    return getWebClientData(this.dh, this.client);
+  }
+
+  public async getWorkspaceRowById(
+    webClientData: QueryInfo,
+    id: string
+  ): Promise<DeserializedRowData | null> {
+    if (this.dh == null) {
+      throw new Error('Deephaven API not initialized');
+    }
+
+    return getWorkspaceRowById(this.dh, webClientData, id);
   }
 }
 

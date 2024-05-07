@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/bmingles/dh-in-vscode"
   },
-  "version": "0.0.3",
+  "version": "0.0.5",
   "engines": {
     "vscode": "^1.87.0"
   },
@@ -15,10 +15,37 @@
     "Other"
   ],
   "activationEvents": [
+    "onFileSystem:dhfs",
     "onLanguage:python"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Deephaven in VS Code",
+      "properties": {
+        "dh-in-vscode.core-servers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "http://localhost:10000/"
+          ],
+          "description": "Deephaven Core servers"
+        },
+        "dh-in-vscode.enterprise-servers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "https://dev-vplus.int.illumon.com:8123/",
+            "https://dev-grizzy.int.illumon.com:8123/"
+          ],
+          "description": "Deephaven Enterprise servers"
+        }
+      }
+    },
     "commands": [
       {
         "command": "dh-in-vscode.connect",
@@ -74,7 +101,8 @@
     "eslint": "^8.47.0",
     "glob": "^10.3.3",
     "mocha": "^10.2.0",
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "@vscode/vsce": "^2.26.1"
   },
   "dependencies": {
     "ws": "^8.16.0"
