@@ -6,6 +6,7 @@ import {
   getAuthenticatedDhcWorkerClient,
   getWebClientData,
   getWorkspaceRowById,
+  getWsUrl,
   initDheApi,
 } from '../dh/dhe';
 import { dh as DhcType } from '../dh/dhc-types';
@@ -28,13 +29,9 @@ export class DheService extends DhService<
   EnterpriseClient,
   CommandResult
 > {
-  constructor(
-    serverUrl: string,
-    outputChannel: vscode.OutputChannel,
-    wsUrl: string
-  ) {
+  constructor(serverUrl: string, outputChannel: vscode.OutputChannel) {
     super(serverUrl, outputChannel);
-    this.wsUrl = wsUrl;
+    this.wsUrl = getWsUrl(serverUrl);
   }
 
   private wsUrl: string;

@@ -145,6 +145,16 @@ export async function buildFsMap(
   }
 }
 
+export function getWsUrl(serverUrl: string): string {
+  const url = new URL('/socket', serverUrl);
+  if (url.protocol === 'http:') {
+    url.protocol = 'ws:';
+  } else {
+    url.protocol = 'wss:';
+  }
+  return url.href;
+}
+
 /**
  * Get WebClientData query from known configs or wait for it to be added.
  * @param client
