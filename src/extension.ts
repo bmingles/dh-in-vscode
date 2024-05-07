@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { getTempDir } from './util';
-import { CacheService, DhcService, DheService } from './services';
+import { DhcService, DheService } from './services';
 import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
 import { DhServiceRegistry } from './services';
 
