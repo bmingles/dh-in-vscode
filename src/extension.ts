@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { getTempDir } from './util';
 import { CacheService, DhcService, DheService } from './services';
 import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
+import { DheServiceRegistry } from './services';
 
 // const CONNECT_COMMAND = "dh-in-vscode.connect";
 const RUN_CODE_COMMAND = 'dh-in-vscode.runCode';
@@ -42,14 +43,6 @@ export function activate(context: vscode.ExtensionContext) {
     `https://bmingles-vm-f1.int.illumon.com:8123`,
   ];
 
-  const dheServiceRegistry = new CacheService(async dheServerUrl => {
-    if (dheServerUrl == null) {
-      throw new Error('DHE host is not set');
-    }
-
-    return new DheService(dheServerUrl, outputChannel);
-  });
-
   const connectionOptions: ConnectionOption[] = [
     { type: 'DHC', label: `DHC: ${dhcHost}`, url: dhcServerUrl },
     ...dheServerUrls.map(dheServerUrl => ({
@@ -64,8 +57,9 @@ export function activate(context: vscode.ExtensionContext) {
   outputChannel.appendLine('Deephaven extension activated');
   outputChannel.show();
 
+  const dheServiceRegistry = new DheServiceRegistry(outputChannel);
+
   if (dheServerUrls.length > 0) {
-    // dheService = new DheService(dheServerUrl, outputChannel, dheWsUrl);
     const webClientDataFs = new WebClientDataFsProvider(dheServiceRegistry);
 
     context.subscriptions.push(

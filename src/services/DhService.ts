@@ -109,6 +109,8 @@ export abstract class DhService<
       return;
     }
 
+    this.outputChannel.appendLine(`Sending code to: ${this.serverUrl}`);
+
     if (this.session == null) {
       await this.initDh();
     }
