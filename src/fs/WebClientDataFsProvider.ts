@@ -3,15 +3,20 @@ import { DebouncedEventQueue } from './DebouncedEventQueue';
 import { DheService } from '../services';
 import { WebClientDataFileNode, WebClientDataFsMap } from '../dh/dhe-fs-types';
 import { CacheService } from '../services/CacheService';
+import { normalizeUrl } from '../util';
 
 export class WebClientDataFsProvider implements vscode.FileSystemProvider {
   constructor(dheServiceRegistry: CacheService<DheService>) {
     this.dheServiceRegistry = dheServiceRegistry;
 
-    this.fsCache = new CacheService(async key => {
-      const dheService = await dheServiceRegistry.get(key);
-      return dheService.buildFsMap();
-    });
+    this.fsCache = new CacheService(
+      'fsCache',
+      async key => {
+        const dheService = await dheServiceRegistry.get(key);
+        return dheService.buildFsMap();
+      },
+      normalizeUrl
+    );
   }
 
   private readonly dheServiceRegistry: CacheService<DheService>;

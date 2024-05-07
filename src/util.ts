@@ -161,6 +161,14 @@ export function getPanelHtml(iframeUrl: string, title: string) {
   </html>`;
 }
 
+export function normalizeUrl(url: string | null) {
+  if (url == null) {
+    return url;
+  }
+
+  return url.endsWith('/') ? url : `${url}/`;
+}
+
 export function polyfillDh() {
   class Event {
     type: string;
