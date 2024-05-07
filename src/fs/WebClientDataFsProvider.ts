@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 import { DebouncedEventQueue } from './DebouncedEventQueue';
-import { DheService } from '../services';
+import { DhServiceRegistry, DheService } from '../services';
 import { WebClientDataFileNode, WebClientDataFsMap } from '../dh/dhe-fs-types';
 import { CacheService } from '../services/CacheService';
 import { normalizeUrl } from '../util';
 
 export class WebClientDataFsProvider implements vscode.FileSystemProvider {
-  constructor(dheServiceRegistry: CacheService<DheService>) {
+  constructor(dheServiceRegistry: DhServiceRegistry<DheService>) {
     this.dheServiceRegistry = dheServiceRegistry;
 
     this.fsCache = new CacheService(

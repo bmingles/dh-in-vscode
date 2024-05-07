@@ -18,7 +18,7 @@ export class CacheService<T> {
     const normalizeKey = this.normalizeKey(key);
 
     if (!this.cachedPromises.has(normalizeKey)) {
-      console.log(`${this.label}: cache miss for key: ${normalizeKey}`);
+      console.log(`${this.label}: caching key: ${normalizeKey}`);
       // Note that we cache the promise itself, not the result of the promise.
       // This helps ensure the loader is only called the first time `get` is
       // called.
