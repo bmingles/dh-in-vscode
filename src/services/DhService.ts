@@ -33,6 +33,8 @@ export abstract class DhService<
     this.outputChannel = outputChannel;
   }
 
+  public readonly serverUrl: string;
+
   protected outputChannel: vscode.OutputChannel;
   private panels = new Map<string, vscode.WebviewPanel>();
   private cachedCreateClient: Promise<TClient> | null = null;
@@ -41,7 +43,6 @@ export abstract class DhService<
 
   protected dh: TDH | null = null;
   protected client: TClient | null = null;
-  protected serverUrl: string;
   protected session: TSession | null = null;
 
   protected abstract initApi(): Promise<TDH>;

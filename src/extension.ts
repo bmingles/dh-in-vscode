@@ -1,29 +1,29 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { getTempDir } from './util';
+import {
+  ConnectionOption,
+  createConnectStatusBarItem,
+  createConnectText,
+  createConnectionOption,
+  createConnectionQuickPick,
+  createDhfsWorkspaceFolderConfig,
+  getTempDir,
+} from './util';
 import { DhcService, DheService } from './services';
 import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
 import { DhServiceRegistry } from './services';
-
-// const CONNECT_COMMAND = "dh-in-vscode.connect";
-const RUN_CODE_COMMAND = 'dh-in-vscode.runCode';
-const RUN_SELECTION_COMMAND = 'dh-in-vscode.runSelection';
-const SELECT_CONNECTION_COMMAND = 'dh-in-vscode.selectConnection';
-const SELECTED_CONNECTION_STORAGE_KEY = 'selectedConnection';
-
-type ConnectionType = 'DHC' | 'DHE';
-interface ConnectionOption {
-  type: ConnectionType;
-  label: string;
-  url: string;
-}
+import {
+  DHFS_SCHEME,
+  RUN_CODE_COMMAND,
+  RUN_SELECTION_COMMAND,
+  SELECTED_CONNECTION_STORAGE_KEY,
+  SELECT_CONNECTION_COMMAND,
+} from './common';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "dh-in-vscode" is now active!');
 
-  let selectedConnectionUrl: string;
-  let selectedDhService!: DhcService | DheService;
+  let selectedConnectionUrl: string | null = null;
+  let selectedDhService: DhcService | DheService | null = null;
 
   const config = vscode.workspace.getConfiguration('dh-in-vscode');
 
@@ -31,64 +31,52 @@ export function activate(context: vscode.ExtensionContext) {
   const dheServerUrls = config.get<string[]>('enterprise-servers') ?? [];
 
   const connectionOptions: ConnectionOption[] = [
-    ...dhcServerUrls.map(createOption('DHC')),
-    ...dheServerUrls.map(createOption('DHE')),
+    ...dhcServerUrls.map(createConnectionOption('DHC')),
+    ...dheServerUrls.map(createConnectionOption('DHE')),
   ];
 
-  const defaultConnection = connectionOptions[0];
-
   const outputChannel = vscode.window.createOutputChannel('Deephaven', 'log');
-  outputChannel.appendLine('Deephaven extension activated');
   outputChannel.show();
+  outputChannel.appendLine('Deephaven extension activated');
 
   const dhcServiceRegistry = new DhServiceRegistry(DhcService, outputChannel);
   const dheServiceRegistry = new DhServiceRegistry(DheService, outputChannel);
 
+  // Register file system provider for DHE servers
   if (dheServerUrls.length > 0) {
     const webClientDataFs = new WebClientDataFsProvider(dheServiceRegistry);
 
     context.subscriptions.push(
-      vscode.workspace.registerFileSystemProvider('dhfs', webClientDataFs, {
-        isCaseSensitive: true,
-      })
+      vscode.workspace.registerFileSystemProvider(
+        DHFS_SCHEME,
+        webClientDataFs,
+        {
+          isCaseSensitive: true,
+        }
+      )
     );
   }
 
-  const runCodeCmd = vscode.commands.registerTextEditorCommand(
-    RUN_CODE_COMMAND,
-    async editor => {
-      if (!selectedConnectionUrl) {
-        await setSelectedConnection(defaultConnection.url);
-      }
-
-      selectedDhService.runEditorCode(editor);
+  /**
+   * Get currently active DH service.
+   * @autoActivate If true, auto-activate a service if none is active.
+   */
+  async function getActiveDhService(
+    autoActivate: boolean
+  ): Promise<DhcService | DheService | null> {
+    if (autoActivate && !selectedConnectionUrl) {
+      const defaultConnection = connectionOptions[0];
+      await onConnectionSelected(defaultConnection.url);
     }
-  );
 
-  const runSelectionCmd = vscode.commands.registerTextEditorCommand(
-    RUN_SELECTION_COMMAND,
-    async editor => {
-      if (!selectedConnectionUrl) {
-        await setSelectedConnection(defaultConnection.url);
-      }
+    return selectedDhService;
+  }
 
-      selectedDhService.runEditorCode(editor, true);
-    }
-  );
-
-  const selectionConnectionCmd = vscode.commands.registerCommand(
-    SELECT_CONNECTION_COMMAND,
-    async () => {
-      const result = await createDHQuickPick(
-        connectionOptions,
-        selectedConnectionUrl
-      );
-      if (!result) {
-        return;
-      }
-
-      setSelectedConnection(result.url);
-    }
+  /** Register extension commands */
+  const { runCodeCmd, runSelectionCmd, selectConnectionCmd } = registerCommands(
+    connectionOptions,
+    getActiveDhService,
+    onConnectionSelected
   );
 
   const connectStatusBarItem = createConnectStatusBarItem();
@@ -97,7 +85,7 @@ export function activate(context: vscode.ExtensionContext) {
     outputChannel,
     runCodeCmd,
     runSelectionCmd,
-    selectionConnectionCmd,
+    selectConnectionCmd,
     connectStatusBarItem
   );
 
@@ -123,12 +111,15 @@ export function activate(context: vscode.ExtensionContext) {
       SELECTED_CONNECTION_STORAGE_KEY
     );
     if (url) {
-      setSelectedConnection(url);
+      onConnectionSelected(url);
       context.globalState.update(SELECTED_CONNECTION_STORAGE_KEY, null);
     }
   }
 
-  async function setSelectedConnection(connectionUrl: string) {
+  /**
+   * Handle connection selection
+   */
+  async function onConnectionSelected(connectionUrl: string) {
     outputChannel.appendLine(`Selecting connection: ${connectionUrl}`);
 
     const option = connectionOptions.find(
@@ -141,7 +132,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     selectedConnectionUrl = connectionUrl;
 
-    connectStatusBarItem.text = getConnectText(option.label);
+    connectStatusBarItem.text = createConnectText(option.label);
 
     selectedDhService =
       option.type === 'DHC'
@@ -156,9 +147,9 @@ export function activate(context: vscode.ExtensionContext) {
       if (option.type === 'DHC') {
         await selectedDhService.initDh();
       } else {
-        const dheUrl = new URL(selectedConnectionUrl);
-        const dheUri = vscode.Uri.parse(
-          `dhfs:/${dheUrl.protocol}${dheUrl.hostname}:${dheUrl.port}`
+        const wsFolderConfig = createDhfsWorkspaceFolderConfig(
+          option.type,
+          selectedConnectionUrl
         );
 
         // If we don't already have a workspace folder for this connection, add
@@ -168,16 +159,14 @@ export function activate(context: vscode.ExtensionContext) {
         // building its tree.
         if (
           !vscode.workspace.workspaceFolders?.some(
-            ({ uri }) => uri.toString() === dheUri.toString()
+            ({ uri }) => uri.toString() === wsFolderConfig.uri.toString()
           )
         ) {
           // Store our selected connection so we can use it when extension re-activates
           storeConnectionUrl();
 
-          vscode.workspace.updateWorkspaceFolders(0, 0, {
-            uri: dheUri,
-            name: `DHE: ${dheUrl.hostname}`,
-          });
+          const i = vscode.workspace.workspaceFolders?.length ?? 0;
+          vscode.workspace.updateWorkspaceFolders(i, 0, wsFolderConfig);
         }
       }
     }
@@ -186,37 +175,49 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
-async function createDHQuickPick(
+/** Register commands for the extension. */
+function registerCommands(
   connectionOptions: ConnectionOption[],
-  selectedUrl?: string
+  getActiveDhService: (
+    autoActivate: boolean
+  ) => Promise<DhcService | DheService | null>,
+  onConnectionSelected: (connectionUrl: string) => void
 ) {
-  return await vscode.window.showQuickPick(
-    connectionOptions.map(option => ({
-      ...option,
-      label: `${option.url === selectedUrl ? '$(circle-filled) ' : '      '} ${
-        option.label
-      }`,
-    }))
+  /** Run all code in active editor */
+  const runCodeCmd = vscode.commands.registerTextEditorCommand(
+    RUN_CODE_COMMAND,
+    async editor => {
+      const dhService = await getActiveDhService(true);
+      dhService?.runEditorCode(editor);
+    }
   );
-}
 
-/** Create a status bar item for connecting to DH server */
-function createConnectStatusBarItem() {
-  const statusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Left,
-    100
+  /** Run selected code in active editor */
+  const runSelectionCmd = vscode.commands.registerTextEditorCommand(
+    RUN_SELECTION_COMMAND,
+    async editor => {
+      const dhService = await getActiveDhService(true);
+      dhService?.runEditorCode(editor, true);
+    }
   );
-  statusBarItem.command = SELECT_CONNECTION_COMMAND;
-  statusBarItem.text = getConnectText('Deephaven: Disconnected');
-  statusBarItem.show();
 
-  return statusBarItem;
-}
+  /** Select connection to run scripts against */
+  const selectConnectionCmd = vscode.commands.registerCommand(
+    SELECT_CONNECTION_COMMAND,
+    async () => {
+      const dhService = await getActiveDhService(false);
 
-function createOption(type: ConnectionType) {
-  return (url: string) => ({ type, label: `${type}: ${url}`, url });
-}
+      const result = await createConnectionQuickPick(
+        connectionOptions,
+        dhService?.serverUrl
+      );
+      if (!result) {
+        return;
+      }
 
-function getConnectText(connectionDisplay: string | 'Deephaven') {
-  return `$(debug-disconnect) ${connectionDisplay.trim()}`;
+      onConnectionSelected(result.url);
+    }
+  );
+
+  return { runCodeCmd, runSelectionCmd, selectConnectionCmd };
 }

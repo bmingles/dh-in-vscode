@@ -3,7 +3,7 @@ import { DebouncedEventQueue } from './DebouncedEventQueue';
 import { DhServiceRegistry, DheService } from '../services';
 import { WebClientDataFileNode, WebClientDataFsMap } from '../dh/dhe-fs-types';
 import { CacheService } from '../services/CacheService';
-import { normalizeUrl } from '../util';
+import { ensureHasTrailingSlash } from '../util';
 
 export class WebClientDataFsProvider implements vscode.FileSystemProvider {
   constructor(dheServiceRegistry: DhServiceRegistry<DheService>) {
@@ -15,7 +15,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
         const dheService = await dheServiceRegistry.get(key);
         return dheService.buildFsMap();
       },
-      normalizeUrl
+      ensureHasTrailingSlash
     );
   }
 
