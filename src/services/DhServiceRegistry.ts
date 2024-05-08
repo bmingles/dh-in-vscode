@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { CacheService } from './CacheService';
 import { DhcService } from './DhcService';
-import { normalizeUrl } from '../util';
+import { ensureHasTrailingSlash } from '../util';
 import DheService from './DheService';
 
 export class DhServiceRegistry<
@@ -23,7 +23,7 @@ export class DhServiceRegistry<
 
         return new serviceFactory(serverUrl, outputChannel);
       },
-      normalizeUrl
+      ensureHasTrailingSlash
     );
   }
 }

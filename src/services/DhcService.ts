@@ -4,10 +4,11 @@ import DhService from './DhService';
 import {
   AUTH_HANDLER_TYPE_ANONYMOUS,
   AUTH_HANDLER_TYPE_PSK,
+  getEmbedWidgetUrl,
   initDhcApi,
   initDhcSession,
 } from '../dh/dhc';
-import { getEmbedWidgetUrl, getPanelHtml } from '../util';
+import { getPanelHtml } from '../util';
 
 export class DhcService extends DhService<
   typeof DhType,

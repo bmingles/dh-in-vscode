@@ -16,7 +16,7 @@
   ],
   "activationEvents": [
     "onFileSystem:dhfs",
-    "onLanguage:python"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {

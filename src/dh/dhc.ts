@@ -9,6 +9,21 @@ export const AUTH_HANDLER_TYPE_ANONYMOUS =
 export const AUTH_HANDLER_TYPE_PSK =
   'io.deephaven.authentication.psk.PskAuthenticationHandler';
 
+/**
+ * Get embed widget url for a widget.
+ * @param serverUrl
+ * @param title
+ * @param psk
+ */
+export function getEmbedWidgetUrl(
+  serverUrl: string,
+  title: string,
+  psk?: string
+) {
+  serverUrl = serverUrl.replace(/\/$/, '');
+  return `${serverUrl}/iframe/widget/?name=${title}${psk ? `&psk=${psk}` : ''}`;
+}
+
 export async function initDhcApi(serverUrl: string): Promise<typeof DhType> {
   polyfillDh();
 
