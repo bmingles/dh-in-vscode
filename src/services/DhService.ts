@@ -68,10 +68,16 @@ export abstract class DhService<
   public async initDh() {
     try {
       if (this.cachedInitApi == null) {
-        vscode.window.showInformationMessage('Initializing Deephaven API');
+        this.outputChannel.appendLine(
+          `Initializing Deephaven API...: ${this.serverUrl}`
+        );
         this.cachedInitApi = this.initApi();
       }
       this.dh = await this.cachedInitApi;
+
+      this.outputChannel.appendLine(
+        `Initialized Deephaven API: ${this.serverUrl}`
+      );
     } catch (err) {
       console.error(err);
       this.outputChannel.appendLine(
@@ -82,21 +88,25 @@ export abstract class DhService<
     }
 
     if (this.cachedCreateClient == null) {
-      this.outputChannel.appendLine('Creating client.');
+      this.outputChannel.appendLine('Creating client...');
       this.cachedCreateClient = this.createClient(this.dh);
     }
     this.client = await this.cachedCreateClient;
 
     if (this.cachedCreateSession == null) {
-      this.outputChannel.appendLine('Creating session.');
+      this.outputChannel.appendLine('Creating session...');
       this.cachedCreateSession = this.createSession(this.dh, this.client);
     }
     this.session = await this.cachedCreateSession;
 
     if (this.session == null) {
-      vscode.window.showErrorMessage('Failed to connect to Deephaven server');
+      vscode.window.showErrorMessage(
+        `Failed to create Deephaven session: ${this.serverUrl}`
+      );
     } else {
-      vscode.window.showInformationMessage('Connected to Deephaven server');
+      vscode.window.showInformationMessage(
+        `Created Deephaven session: ${this.serverUrl}`
+      );
     }
   }
 

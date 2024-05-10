@@ -13,7 +13,6 @@ import { dh as DhcType } from '../dh/dhc-types';
 import {
   EnterpriseDhType as DheType,
   CommandResult,
-  IdeSession,
   DhcConnectionDetails,
   EnterpriseClient,
   QueryInfo,
@@ -83,7 +82,9 @@ export class DheService extends DhService<
 
     const credentials = { username, token, type: 'password' };
 
-    vscode.window.showInformationMessage('Creating Deephaven session');
+    vscode.window.showInformationMessage(
+      `Creating Deephaven session: ${this.serverUrl}`
+    );
 
     await dheClient.login(credentials);
 
@@ -100,17 +101,21 @@ export class DheService extends DhService<
       // kubernetes_worker_control: kubernetesWorkerControl,
     });
 
-    this.outputChannel.appendLine('Starting DHC worker');
+    this.outputChannel.appendLine('Starting DHC worker...');
     this.worker = await ide.startWorker(config);
 
     const { grpcUrl, ideUrl, jsApiUrl } = this.worker;
-    this.outputChannel.appendLine(`DHC worker started: ${ideUrl}`);
+    this.outputChannel.appendLine(`Started DHC worker: ${ideUrl}`);
 
     console.log('Worker IDE URL:', ideUrl);
     console.log('JS API URL:', jsApiUrl);
 
-    this.outputChannel.appendLine('Initializing DHC API');
+    this.outputChannel.appendLine(
+      `Initializing DHC Worker API...: ${jsApiUrl}`
+    );
     const dhc = await initDhcApi(new URL(jsApiUrl).origin);
+
+    this.outputChannel.appendLine(`Initialized DHC Worker API: ${jsApiUrl}`);
 
     const dhcClient = await getAuthenticatedDhcWorkerClient(
       dheClient,
