@@ -140,12 +140,11 @@ export function activate(context: vscode.ExtensionContext) {
         : await dheServiceRegistry.get(selectedConnectionUrl);
 
     if (selectedDhService.isInitialized) {
-      vscode.window.showInformationMessage(
-        `Connected to ${selectedConnectionUrl}`
-      );
+      outputChannel.appendLine(`Initialized: ${selectedConnectionUrl}`);
     } else {
       if (option.type === 'DHC') {
         await selectedDhService.initDh();
+        outputChannel.appendLine(`Initialized: ${selectedConnectionUrl}`);
       } else {
         const wsFolderConfig = createDhfsWorkspaceFolderConfig(
           option.type,
@@ -162,6 +161,10 @@ export function activate(context: vscode.ExtensionContext) {
             ({ uri }) => uri.toString() === wsFolderConfig.uri.toString()
           )
         ) {
+          outputChannel.appendLine(
+            `Adding folder to workspace: ${selectedConnectionUrl}`
+          );
+
           // Store our selected connection so we can use it when extension re-activates
           storeConnectionUrl();
 
