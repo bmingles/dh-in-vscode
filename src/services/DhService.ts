@@ -100,9 +100,13 @@ export abstract class DhService<
     this.session = await this.cachedCreateSession;
 
     if (this.session == null) {
-      vscode.window.showErrorMessage('Failed to connect to Deephaven server');
+      vscode.window.showErrorMessage(
+        `Failed to create Deephaven session: ${this.serverUrl}`
+      );
     } else {
-      vscode.window.showInformationMessage('Connected to Deephaven server');
+      vscode.window.showInformationMessage(
+        `Created Deephaven session: ${this.serverUrl}`
+      );
     }
   }
 

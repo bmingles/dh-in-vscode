@@ -82,7 +82,9 @@ export class DheService extends DhService<
 
     const credentials = { username, token, type: 'password' };
 
-    vscode.window.showInformationMessage('Creating Deephaven session');
+    vscode.window.showInformationMessage(
+      `Creating Deephaven session: ${this.serverUrl}`
+    );
 
     await dheClient.login(credentials);
 
