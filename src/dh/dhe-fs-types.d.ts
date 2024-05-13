@@ -5,7 +5,7 @@ export interface WebClientDataFsNodeBase {
   type: 'File' | 'Folder';
   parentId: string;
   name: string;
-  lastModified: DateWrapper;
+  lastModified?: DateWrapper;
 }
 
 export interface WebClientDataFileNode extends WebClientDataFsNodeBase {

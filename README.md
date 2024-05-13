@@ -62,7 +62,11 @@ The extension dynamically downloads and loads the DH JS API from a DH Core serve
 ### TODO
 
 - https://github.com/deephaven/web-client-ui/pull/1925 - allow panels to update in DH when commands are sent from extension
-- Support server url configuration
-- embed-widget to support Deephaven UI
-- better panel layout support (this is limited by vscode apis)
-- open workspace folder from server
+- BUG: Panel opened in bottom row of vscode. All tabs closed. Re-run, panel doesn't show up
+- Finish DHE fs apis
+- BUG: DHE connection restores itself even if folder has been removed from WS
+- Settings
+  - Enable / disable DHE
+  - Enable / diable panels
+  - Enable / disable DHE FS
+- Auto connect to server option?

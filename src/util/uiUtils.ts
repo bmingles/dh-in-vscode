@@ -90,3 +90,14 @@ export function createDhfsWorkspaceFolderConfig(
     name: `${type}: ${url.hostname}`,
   };
 }
+
+/**
+ * See if a workspace folder is present for the given uri.
+ * @param uri
+ * @returns
+ */
+export function isWorkspaceFolderPresent(wsUri: vscode.Uri) {
+  return vscode.workspace.workspaceFolders?.some(
+    ({ uri }) => uri.toString() === wsUri.toString()
+  );
+}
