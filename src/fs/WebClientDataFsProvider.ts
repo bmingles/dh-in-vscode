@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
+import { basename, dirname } from 'node:path';
 import { DebouncedEventQueue } from './DebouncedEventQueue';
 import { DhServiceRegistry, DheService } from '../services';
 import { WebClientDataFileNode, WebClientDataFsMap } from '../dh/dhe-fs-types';
 import { CacheService } from '../services/CacheService';
 import { ensureHasTrailingSlash } from '../util';
+import { DHE_CURRENT_FS_VERSION } from '../common';
 
 export class WebClientDataFsProvider implements vscode.FileSystemProvider {
   constructor(dheServiceRegistry: DhServiceRegistry<DheService>) {
@@ -95,6 +97,10 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     throw new Error('rename: method not implemented.');
   }
 
+  /**
+   * Retrieve metadata about a file system node.
+   * @param uri The URI of the file to retrieve metadata for.
+   */
   async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
     const { root, path } = splitPath(uri.path);
     console.log('stat:', uri.path, { root, path });
@@ -129,6 +135,8 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
         size: 0,
       };
     }
+
+    console.log('stat not found:', uri.path);
     throw vscode.FileSystemError.FileNotFound(uri);
   }
 
@@ -149,23 +157,51 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
   ): Promise<void> {
     console.log('writeFile:', uri.path);
     const { root, path } = splitPath(uri.path);
-    const { pathMap } = await this.fsCache.get(root);
+    const { dirMap, pathMap } = await this.fsCache.get(root);
 
     const doc = pathMap.get(path);
-    if (doc == null || doc.type !== 'File') {
-      // TODO: Implement create
-      throw new Error(`Doc not found: ${uri.path}`);
-    }
+    const content = contentArray.toString();
 
     const dheService = await this.dheServiceRegistry.get(root);
     const webClientData = await dheService.getWebClientData();
 
-    const content = contentArray.toString();
+    if (doc == null || doc.type !== 'File') {
+      const dirName = dirname(path);
+      const name = basename(path);
+      const parentId = pathMap.get(dirName)?.id ?? '';
+
+      const row = {
+        id: null,
+        adminGroups: [],
+        dataType: 'File',
+        data: JSON.stringify({ content }),
+        name: `${parentId}/${name}`,
+        owner: dheService.getUsername(),
+        status: 'Active',
+        version: DHE_CURRENT_FS_VERSION,
+        viewerGroups: [],
+      };
+
+      const createdRowId = await webClientData.createWorkspaceData(row);
+
+      pathMap.set(path, {
+        id: createdRowId,
+        type: 'File',
+        parentId,
+        name,
+        content,
+      });
+
+      dirMap.get(dirName)!.push(pathMap.get(path)!);
+
+      return;
+    }
+
     const row = await dheService.getWorkspaceRowById(webClientData, doc.id);
 
     await webClientData.saveWorkspaceData(
       { ...row, data: JSON.stringify({ content }) },
-      8 // TODO: Should this be a constant or derived somehow?
+      DHE_CURRENT_FS_VERSION
     );
 
     doc.content = content;
@@ -180,9 +216,11 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
 }
 
 function splitPath(fullPath: string): { root: string; path: string } {
-  const [, root = '', path = ''] = /\/([^/]+)(.*)/.exec(fullPath) ?? [];
+  const [, root = '', path = ''] = /\/([^/]+)(.*)$/.exec(fullPath) ?? [];
+  const trailingSlashRegEx = /\/$/;
+
   return {
     root: root.replace(/^(https?:)/, '$1//'),
-    path: path === '' ? '/' : path,
+    path: path === '' ? '/' : path.replace(trailingSlashRegEx, ''),
   };
 }

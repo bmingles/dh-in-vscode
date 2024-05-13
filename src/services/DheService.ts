@@ -33,9 +33,14 @@ export class DheService extends DhService<
     this.wsUrl = getWsUrl(serverUrl);
   }
 
+  private username?: string;
   private wsUrl: string;
   private worker: DhcConnectionDetails | null = null;
   // private workerUrl: string | null = null;
+
+  public getUsername(): string | undefined {
+    return this.username;
+  }
 
   protected initApi(): Promise<DheType> {
     return initDheApi(this.serverUrl);
@@ -60,7 +65,7 @@ export class DheService extends DhService<
     dhe: DheType,
     dheClient: EnterpriseClient
   ): Promise<DhcType.IdeSession | null> {
-    const username =
+    this.username =
       process.env.DH_IN_VSCODE_DHE_USERNAME ??
       (await vscode.window.showInputBox({
         prompt: 'Username',
@@ -75,12 +80,12 @@ export class DheService extends DhService<
         password: true,
       }));
 
-    if (username == null || token == null) {
+    if (this.username == null || token == null) {
       vscode.window.showErrorMessage('Username and password are required');
       return null;
     }
 
-    const credentials = { username, token, type: 'password' };
+    const credentials = { username: this.username, token, type: 'password' };
 
     vscode.window.showInformationMessage(
       `Creating Deephaven session: ${this.serverUrl}`

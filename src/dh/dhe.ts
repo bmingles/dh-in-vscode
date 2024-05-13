@@ -268,15 +268,20 @@ async function getFsIdMap(
   const nameColumn = table.findColumn('Name');
   const dataTypeColumn = table.findColumn('DataType');
   const dataColumn = table.findColumn('Data');
+  const statusColumn = table.findColumn('Status');
   const lastModifiedTimeColumn = table.findColumn('LastModifiedTime');
 
   // filters
   const dataTypeColumnFilter = dataTypeColumn!.filter();
+  const statusColumnFilter = statusColumn!.filter();
+  const activeFilterCondition = statusColumnFilter.eq(
+    dhe.FilterValue.ofString('Active')
+  );
   const fileFilterCondition = dataTypeColumnFilter
     .eq(dhe.FilterValue.ofString('File'))
     .or(dataTypeColumnFilter.eq(dhe.FilterValue.ofString('Folder')));
 
-  table.applyFilter([fileFilterCondition]);
+  table.applyFilter([activeFilterCondition, fileFilterCondition]);
 
   table.setViewport(0, 9);
   const viewportData = await table.getViewportData();

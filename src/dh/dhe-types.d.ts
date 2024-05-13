@@ -1301,7 +1301,7 @@ export interface QueryInfo {
 
   getFigure(name: string): Promise<unknown>;
 
-  createWorkspaceData(): Promise<string>;
+  createWorkspaceData(row: unknown): Promise<string>;
 
   saveWorkspaceData(
     serializedRowData: SerializedRowData,
