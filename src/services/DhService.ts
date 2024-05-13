@@ -174,11 +174,18 @@ export abstract class DhService<
         );
 
         this.panels.set(title, panel);
+
+        // If panel gets disposed, remove it from the cache
+        panel.onDidDispose(() => {
+          this.panels.delete(title);
+        });
       }
 
-      this.panels.get(title)!.webview.html = this.getPanelHtml(title);
+      const panel = this.panels.get(title)!;
 
-      this.panels.get(title)!.webview.onDidReceiveMessage(({ data }) => {
+      panel.webview.html = this.getPanelHtml(title);
+
+      panel.webview.onDidReceiveMessage(({ data }) => {
         this.handlePanelMessage(
           data,
           this.panels
