@@ -7,6 +7,7 @@ import {
   createConnectionQuickPick,
   createDhfsWorkspaceFolderConfig,
   getTempDir,
+  isWorkspaceFolderPresent,
 } from './util';
 import { DhcService, DheService } from './services';
 import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
@@ -15,7 +16,7 @@ import {
   DHFS_SCHEME,
   RUN_CODE_COMMAND,
   RUN_SELECTION_COMMAND,
-  SELECTED_CONNECTION_STORAGE_KEY,
+  WS_FOLDER_CONNECTION_URL,
   SELECT_CONNECTION_COMMAND,
 } from './common';
 
@@ -92,27 +93,29 @@ export function activate(context: vscode.ExtensionContext) {
   // recreate tmp dir that will be used to dowload JS Apis
   getTempDir(true /*recreate*/);
 
-  // If we have a stored connection, restore it
-  restoreConnection();
+  // If we have a stored connection for a ws folder being added, restore it
+  restoreWsFolderConnection();
 
   // Store connection url so we can restore it when extension re-activates.
   // This is useful for DHE workspace folders that cause a re-activation when
   // added to the workspace.
-  function storeConnectionUrl() {
-    context.globalState.update(
-      SELECTED_CONNECTION_STORAGE_KEY,
-      selectedConnectionUrl
-    );
+  function storeWsFolderConnectionUrl(wsFolderConnectionUrl: string) {
+    context.globalState.update(WS_FOLDER_CONNECTION_URL, wsFolderConnectionUrl);
   }
 
   // Restore connection if we have one stored
-  function restoreConnection() {
-    const url = context.globalState.get<string>(
-      SELECTED_CONNECTION_STORAGE_KEY
-    );
-    if (url) {
+  function restoreWsFolderConnection() {
+    const url = context.globalState.get<string>(WS_FOLDER_CONNECTION_URL);
+
+    // If we have a stored url and the ws folder exists in the workspace, this
+    // means the extension was re-activated because the ws folder was added, so
+    // reconnect
+    if (
+      url &&
+      isWorkspaceFolderPresent(createDhfsWorkspaceFolderConfig('DHE', url).uri)
+    ) {
+      outputChannel.appendLine(`Restoring connection: ${url}`);
       onConnectionSelected(url);
-      context.globalState.update(SELECTED_CONNECTION_STORAGE_KEY, null);
     }
   }
 
@@ -121,6 +124,9 @@ export function activate(context: vscode.ExtensionContext) {
    */
   async function onConnectionSelected(connectionUrl: string) {
     outputChannel.appendLine(`Selecting connection: ${connectionUrl}`);
+
+    // Clear any previously stored connection
+    context.globalState.update(WS_FOLDER_CONNECTION_URL, null);
 
     const option = connectionOptions.find(
       option => option.url === connectionUrl
@@ -156,17 +162,13 @@ export function activate(context: vscode.ExtensionContext) {
         // lose any state, so don't bother calling `initDh()` here. It will get
         // called lazily after extension is re-activated and the dhfs starts
         // building its tree.
-        if (
-          !vscode.workspace.workspaceFolders?.some(
-            ({ uri }) => uri.toString() === wsFolderConfig.uri.toString()
-          )
-        ) {
+        if (!isWorkspaceFolderPresent(wsFolderConfig.uri)) {
           outputChannel.appendLine(
             `Adding folder to workspace: ${selectedConnectionUrl}`
           );
 
           // Store our selected connection so we can use it when extension re-activates
-          storeConnectionUrl();
+          storeWsFolderConnectionUrl(selectedConnectionUrl);
 
           const i = vscode.workspace.workspaceFolders?.length ?? 0;
           vscode.workspace.updateWorkspaceFolders(i, 0, wsFolderConfig);
