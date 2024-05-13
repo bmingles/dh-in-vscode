@@ -69,3 +69,4 @@ The extension dynamically downloads and loads the DH JS API from a DH Core serve
   - Enable / disable DHE
   - Enable / diable panels
   - Enable / disable DHE FS
+- Auto connect to server option?
