@@ -131,6 +131,10 @@ export async function buildFsMap(
         dirMap.set(parentPath, []);
       }
 
+      if (node.type === 'Folder' && !dirMap.has(path)) {
+        dirMap.set(path, []);
+      }
+
       dirMap.get(parentPath)!.push(node);
       pathMap.set(path, node);
     }
@@ -272,18 +276,19 @@ async function getFsIdMap(
   const lastModifiedTimeColumn = table.findColumn('LastModifiedTime');
 
   // filters
-  const dataTypeColumnFilter = dataTypeColumn!.filter();
   const statusColumnFilter = statusColumn!.filter();
   const activeFilterCondition = statusColumnFilter.eq(
     dhe.FilterValue.ofString('Active')
   );
+
+  const dataTypeColumnFilter = dataTypeColumn!.filter();
   const fileFilterCondition = dataTypeColumnFilter
     .eq(dhe.FilterValue.ofString('File'))
     .or(dataTypeColumnFilter.eq(dhe.FilterValue.ofString('Folder')));
 
   table.applyFilter([activeFilterCondition, fileFilterCondition]);
 
-  table.setViewport(0, 9);
+  table.setViewport(0, table.size);
   const viewportData = await table.getViewportData();
 
   const fsMap = new Map<string, WebClientDataFsNode>();
