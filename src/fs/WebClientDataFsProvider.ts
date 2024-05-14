@@ -37,22 +37,102 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     throw new Error('copy: method not implemented.');
   }
 
-  createDirectory(uri: vscode.Uri): void | Thenable<void> {
+  async createDirectory(uri: vscode.Uri): Promise<void> {
     console.log('createDirectory:', uri.path);
-    // const basename = path.posix.basename(uri.path);
-    // const dirname = uri.with({ path: path.posix.dirname(uri.path) });
-    // const parent = this._lookupAsDirectory(dirname, false);
-    // const entry = new Directory(basename);
-    // parent.entries.set(entry.name, entry);
-    // parent.mtime = Date.now();
-    // parent.size += 1;
+
+    const { root, path } = splitPath(uri.path);
+    const { dirMap, pathMap } = await this.fsCache.get(root);
+
+    const dheService = await this.dheServiceRegistry.get(root);
+    const webClientData = await dheService.getWebClientData();
+
+    const parentDirPath = dirname(path);
+    const name = basename(path);
+    const parentId = pathMap.get(parentDirPath)?.id ?? '';
+
+    const row = {
+      id: null,
+      adminGroups: [],
+      dataType: 'Folder',
+      data: JSON.stringify({}),
+      name: `${parentId}/${name}`,
+      owner: dheService.getUsername(),
+      status: 'Active',
+      version: DHE_CURRENT_FS_VERSION,
+      viewerGroups: [],
+    };
+
+    const createdRowId = await webClientData.createWorkspaceData(row);
+
+    pathMap.set(path, {
+      id: createdRowId,
+      type: 'Folder',
+      parentId,
+      name,
+    });
+
+    dirMap.get(parentDirPath)!.push(pathMap.get(path)!);
+    dirMap.set(path, []);
   }
 
-  delete(
+  /**
+   * Delete a file or folder.
+   * @param uri
+   * @param options
+   */
+  async delete(
     uri: vscode.Uri,
     options: { readonly recursive: boolean }
-  ): void | Thenable<void> {
-    throw new Error('delete: method not implemented.');
+  ): Promise<void> {
+    const { root, path } = splitPath(uri.path);
+    console.log('delete:', uri.path, { root, path });
+
+    const { dirMap, pathMap } = await this.fsCache.get(root);
+
+    if (options.recursive && dirMap.has(path)) {
+      const children = dirMap.get(path)!;
+
+      for (const child of children) {
+        await this.delete(vscode.Uri.joinPath(uri, child.name), options);
+      }
+    }
+
+    const dheService = await this.dheServiceRegistry.get(root);
+    const webClientData = await dheService.getWebClientData();
+
+    const id = pathMap.get(path)?.id;
+
+    const row =
+      id == null
+        ? null
+        : await dheService.getWorkspaceRowById(webClientData, id);
+
+    if (row == null) {
+      throw vscode.FileSystemError.FileNotFound(uri);
+    }
+
+    await webClientData.saveWorkspaceData(
+      {
+        ...row,
+        data: JSON.stringify({ content: row.data.content }),
+        status: 'Trashed',
+      },
+      DHE_CURRENT_FS_VERSION
+    );
+
+    if (dirMap.has(path)) {
+      dirMap.delete(path);
+    }
+
+    // Remove from parent directory listing
+    const parentDir = dirname(path);
+    const name = basename(path);
+    dirMap.set(
+      parentDir,
+      dirMap.get(parentDir)!.filter(n => n.name !== name)
+    );
+
+    pathMap.delete(path);
   }
 
   async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
@@ -153,7 +233,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
   async writeFile(
     uri: vscode.Uri,
     contentArray: Uint8Array,
-    options: { readonly create: boolean; readonly overwrite: boolean }
+    _options: { readonly create: boolean; readonly overwrite: boolean }
   ): Promise<void> {
     console.log('writeFile:', uri.path);
     const { root, path } = splitPath(uri.path);
@@ -165,7 +245,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     const dheService = await this.dheServiceRegistry.get(root);
     const webClientData = await dheService.getWebClientData();
 
-    if (doc == null || doc.type !== 'File') {
+    if (doc == null) {
       const dirName = dirname(path);
       const name = basename(path);
       const parentId = pathMap.get(dirName)?.id ?? '';
@@ -195,6 +275,10 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
       dirMap.get(dirName)!.push(pathMap.get(path)!);
 
       return;
+    }
+
+    if (doc.type !== 'File') {
+      throw vscode.FileSystemError.FileNotFound(uri);
     }
 
     const row = await dheService.getWorkspaceRowById(webClientData, doc.id);
