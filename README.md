@@ -23,19 +23,40 @@ Build a .vsix locally via `npm run package`
 Then install in vscode:
 ![Install Deephaven in VS Code](docs/install.png)
 
-## Server Connection
+## Connecting to a Server
 
-The first time a script is run in an open workspace, the extension will:
+Core server `http://localhost:10000/` is configured by default and doesn't require any additional config. Additional connections can be configured in `vscode` settings.
 
-1. Download the JS API from the server
-2. Attempt to authenticate anonymously
-3. If anonymous auth fails, prompt for `PSK`
-4. If either 3 or 4 succeeds, run the script against the server
-5. Update panels in vscode and deephaven.
+e.g. `.vscode/settings.json`
 
-On subsequent script runs, the session will be re-used and only steps 4 and 5 will run
+```jsonc
+{
+  // Core servers
+  "dh-in-vscode.core-servers": [
+    "http://localhost:10000/",
+    "http://localhost:10001"
+  ],
+  // Enterprise servers
+  "dh-in-vscode.enterprise-servers": [
+    "https://some-dhe-server:8123/",
+    "https://some-other-server:8124"
+  ]
+}
+```
+
+To select the active connection that scripts will be run against, click the connection picker in the bottom status bar of vscode.
+
+> Note: If you don't select a connection, the first one will be automatically used the first time a script is run.
+
+![Pick Connection](docs/select-connection.png)
+
+Then select one of the servers:
+
+![Connection Options](docs/select-connection-options.png)
 
 ## Running Scripts
+
+Scripts will be run against the active connection or default to the first connection if none is selected.
 
 1. Start a DH core server at http://localhost:1000
 2. Open a DH Python script in vscode
@@ -50,7 +71,35 @@ On subsequent script runs, the session will be re-used and only steps 4 and 5 wi
 
    ![Deephaven: Run Selection](docs/run-selection.png)
 
+## Code Snippets
+
+The `dh-in-vscode` extension comes with some predefined `python` snippets. These insert pre-defined code snippets into an editor. To use, simply type `ui` to see available snippets.
+
+![Code Snippets](docs/code-snippets.png)
+
 ## Implementation Notes
+
+### Server Connection
+
+### DHC
+
+The first time a connection is made to a `DHC` server, the extension will:
+
+1. Download the JS API from the server
+2. Check server auth config. If anonymous, connect anonymously. If `PSK` prompt for `PSK`.
+
+If auth succeeds and connection was initiated by running a script:
+
+1. Run the script against the server
+2. Update panels in vscode and deephaven.
+
+On subsequent script runs, the session will be re-used and only steps 4 and 5 will run
+
+### DHE
+
+1. Download the JS API from the server
+2. Prompt the user to authenticate (or will pull from env variables)
+3.
 
 ### Downloading JS API
 
@@ -62,9 +111,7 @@ The extension dynamically downloads and loads the DH JS API from a DH Core serve
 ### TODO
 
 - https://github.com/deephaven/web-client-ui/pull/1925 - allow panels to update in DH when commands are sent from extension
-- BUG: Panel opened in bottom row of vscode. All tabs closed. Re-run, panel doesn't show up
 - Finish DHE fs apis
-- BUG: DHE connection restores itself even if folder has been removed from WS
 - Settings
   - Enable / disable DHE
   - Enable / diable panels

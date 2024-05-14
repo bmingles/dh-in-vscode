@@ -39,10 +39,7 @@
           "items": {
             "type": "string"
           },
-          "default": [
-            "https://dev-vplus.int.illumon.com:8123/",
-            "https://dev-grizzy.int.illumon.com:8123/"
-          ],
+          "default": [],
           "description": "Deephaven Enterprise servers"
         }
       }
