@@ -29,12 +29,34 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
   readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> =
     this._eventQueue.event;
 
-  copy?(
+  async copy(
     source: vscode.Uri,
     destination: vscode.Uri,
     options: { readonly overwrite: boolean }
-  ): void | Thenable<void> {
-    throw new Error('copy: method not implemented.');
+  ): Promise<void> {
+    console.log('Copy:', source.path, '->', destination.path);
+    const { root, path: sourcePath } = splitPath(source.path);
+    const { path: destPath } = splitPath(destination.path);
+
+    const { pathMap } = await this.fsCache.get(root);
+
+    const sourceNode = pathMap.get(sourcePath);
+
+    if (sourceNode == null) {
+      throw vscode.FileSystemError.FileNotFound();
+    }
+
+    if (sourceNode.type === 'Folder') {
+      throw new Error('Copy folder not yet supported.');
+    }
+
+    const destNode = pathMap.get(destPath);
+    if (destNode) {
+      throw new Error('Target file already exists.');
+    }
+
+    const file = await this.readFile(source);
+    await this.writeFile(destination, file, { create: true, overwrite: false });
   }
 
   async createDirectory(uri: vscode.Uri): Promise<void> {
@@ -174,7 +196,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     newUri: vscode.Uri,
     options: { readonly overwrite: boolean }
   ): void | Thenable<void> {
-    throw new Error('rename: method not implemented.');
+    throw new Error('Rename not yet supported.');
   }
 
   /**
@@ -238,6 +260,12 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     return new vscode.Disposable(() => {});
   }
 
+  /**
+   * Write a file to the FS
+   * @param uri
+   * @param contentArray
+   * @param options
+   */
   async writeFile(
     uri: vscode.Uri,
     contentArray: Uint8Array,
