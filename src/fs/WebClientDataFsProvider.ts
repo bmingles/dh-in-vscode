@@ -183,7 +183,14 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
    */
   async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
     const { root, path } = splitPath(uri.path);
-    console.log('stat:', uri.path, { root, path });
+    console.log('stat:', uri.path, { isRoot: path === '/', root, path });
+
+    // This seems to be a reasonable place to clear the fs cache. It fires
+    // whenever focus leaves vscode and returns or when refresh file explorer
+    // button is clicked.
+    if (path === '/') {
+      this.fsCache.clearCache();
+    }
 
     if (uri.path === '/' || path === '/') {
       return {
@@ -227,6 +234,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
       readonly excludes: readonly string[];
     }
   ): vscode.Disposable {
+    console.log('watch:', uri.path, options);
     return new vscode.Disposable(() => {});
   }
 
