@@ -74,7 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   /** Register extension commands */
   const { runCodeCmd, runSelectionCmd, selectConnectionCmd } = registerCommands(
-    connectionOptions,
+    () => connectionOptions,
     getActiveDhService,
     onConnectionSelected
   );
@@ -186,7 +186,7 @@ export function deactivate() {}
 
 /** Register commands for the extension. */
 function registerCommands(
-  connectionOptions: ConnectionOption[],
+  getConnectionOptions: () => ConnectionOption[],
   getActiveDhService: (
     autoActivate: boolean
   ) => Promise<DhcService | DheService | null>,
@@ -217,7 +217,7 @@ function registerCommands(
       const dhService = await getActiveDhService(false);
 
       const result = await createConnectionQuickPick(
-        connectionOptions,
+        getConnectionOptions(),
         dhService?.serverUrl
       );
       if (!result) {
