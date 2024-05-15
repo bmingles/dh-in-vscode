@@ -112,10 +112,11 @@ The extension dynamically downloads and loads the DH JS API from a DH Core serve
 
 - https://github.com/deephaven/web-client-ui/pull/1925 - allow panels to update in DH when commands are sent from extension
 - Finish DHE fs apis
-- Refresh dhfs button
 - Auto update dhfs if files change on server
 - Settings
   - Enable / disable DHE
   - Enable / diable panels
   - Enable / disable DHE FS
 - Auto connect to server option?
+- Mocking partial browser apis breaks other extensions
+- Make sure DH subscriptions are properly cleaned up
