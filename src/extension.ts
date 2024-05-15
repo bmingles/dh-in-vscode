@@ -37,7 +37,6 @@ export function activate(context: vscode.ExtensionContext) {
   ];
 
   const outputChannel = vscode.window.createOutputChannel('Deephaven', 'log');
-  outputChannel.show();
   outputChannel.appendLine('Deephaven extension activated');
 
   const dhcServiceRegistry = new DhServiceRegistry(DhcService, outputChannel);
@@ -123,6 +122,11 @@ export function activate(context: vscode.ExtensionContext) {
    * Handle connection selection
    */
   async function onConnectionSelected(connectionUrl: string) {
+    // Show the output panel whenever we select a connection. This is a little
+    // friendlier to the user instead of it opening when the extension activates
+    // for cases where the user isn't working with DH server
+    outputChannel.show();
+
     outputChannel.appendLine(`Selecting connection: ${connectionUrl}`);
 
     // Clear any previously stored connection
