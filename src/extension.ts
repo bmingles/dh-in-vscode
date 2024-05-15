@@ -4,12 +4,13 @@ import {
   createConnectStatusBarItem,
   createConnectText,
   createConnectionOption,
+  createConnectionOptions,
   createConnectionQuickPick,
   createDhfsWorkspaceFolderConfig,
   getTempDir,
   isWorkspaceFolderPresent,
 } from './util';
-import { DhcService, DheService } from './services';
+import { Config, DhcService, DheService } from './services';
 import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
 import { DhServiceRegistry } from './services';
 import {
@@ -25,25 +26,26 @@ export function activate(context: vscode.ExtensionContext) {
 
   let selectedConnectionUrl: string | null = null;
   let selectedDhService: DhcService | DheService | null = null;
-
-  const config = vscode.workspace.getConfiguration('dh-in-vscode');
-
-  const dhcServerUrls = config.get<string[]>('core-servers') ?? [];
-  const dheServerUrls = config.get<string[]>('enterprise-servers') ?? [];
-
-  const connectionOptions: ConnectionOption[] = [
-    ...dhcServerUrls.map(createConnectionOption('DHC')),
-    ...dheServerUrls.map(createConnectionOption('DHE')),
-  ];
+  let connectionOptions = createConnectionOptions();
 
   const outputChannel = vscode.window.createOutputChannel('Deephaven', 'log');
   outputChannel.appendLine('Deephaven extension activated');
+
+  // Update connection options when configuration changes
+  vscode.workspace.onDidChangeConfiguration(
+    () => {
+      outputChannel.appendLine('Configuration changed');
+      connectionOptions = createConnectionOptions();
+    },
+    null,
+    context.subscriptions
+  );
 
   const dhcServiceRegistry = new DhServiceRegistry(DhcService, outputChannel);
   const dheServiceRegistry = new DhServiceRegistry(DheService, outputChannel);
 
   // Register file system provider for DHE servers
-  if (dheServerUrls.length > 0) {
+  if (Config.hasEnterpriseServers()) {
     const webClientDataFs = new WebClientDataFsProvider(dheServiceRegistry);
 
     context.subscriptions.push(

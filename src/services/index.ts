@@ -1,4 +1,5 @@
 export * from './CacheService';
+export * from './Config';
 export * from './DhService';
 export * from './DheService';
 export * from './DhcService';

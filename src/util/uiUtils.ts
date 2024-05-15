@@ -4,6 +4,7 @@ import {
   DHFS_SCHEME,
   SELECT_CONNECTION_COMMAND,
 } from '../common';
+import { Config } from '../services';
 
 export interface ConnectionOption {
   type: ConnectionType;
@@ -61,6 +62,21 @@ export function createConnectionOption(type: ConnectionType) {
 
     return { type, label, url: serverUrl };
   };
+}
+
+/**
+ * Create connection options from current extension config.
+ */
+export function createConnectionOptions(): ConnectionOption[] {
+  const dhcServerUrls = Config.getCoreServers();
+  const dheServerUrls = Config.getEnterpriseServers();
+
+  const connectionOptions: ConnectionOption[] = [
+    ...dhcServerUrls.map(createConnectionOption('DHC')),
+    ...dheServerUrls.map(createConnectionOption('DHE')),
+  ];
+
+  return connectionOptions;
 }
 
 /**
