@@ -215,12 +215,49 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
    * @param newUri
    * @param options
    */
-  rename(
+  async rename(
     oldUri: vscode.Uri,
     newUri: vscode.Uri,
     options: { readonly overwrite: boolean }
-  ): void | Thenable<void> {
-    throw new Error('Rename not yet supported.');
+  ): Promise<void> {
+    const { root, path: sourcePath } = getServerUrlAndPath(oldUri);
+    const { path: destPath } = getServerUrlAndPath(newUri);
+
+    const { pathMap } = await this.fsCache.get(root);
+
+    const sourceNode = pathMap.get(sourcePath);
+    if (sourceNode == null) {
+      throw vscode.FileSystemError.FileNotFound(oldUri);
+    }
+
+    const dheService = await this.dheServiceRegistry.get(root);
+    const webClientData = await dheService.getWebClientData();
+
+    const row = await dheService.getWorkspaceRowById<{
+      name: string;
+      data: { content: unknown };
+    }>(webClientData, sourceNode.id);
+    if (row == null) {
+      throw vscode.FileSystemError.FileNotFound(oldUri);
+    }
+
+    const name = row.name.replace(/[^/]+$/, basename(destPath));
+
+    await webClientData.saveWorkspaceData(
+      {
+        ...row,
+        data: JSON.stringify({ content: row.data.content }),
+        name,
+        nameLowercase: name.toLowerCase(),
+      },
+      DHE_CURRENT_FS_VERSION
+    );
+
+    this.fsCache.clearCache();
+
+    // TODO: Figure out how to know when the rename is complete. For some reason
+    // it is not available immediately after `saveWorkspaceData` is called
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   /**
