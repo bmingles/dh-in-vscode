@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
-import {
-  ConnectionType,
-  DHFS_SCHEME,
-  SELECT_CONNECTION_COMMAND,
-} from '../common';
+import { ConnectionType, SELECT_CONNECTION_COMMAND } from '../common';
 import { Config } from '../services';
+import { serverUrlToFsRootUri } from './urlUtils';
 
 export interface ConnectionOption {
   type: ConnectionType;
@@ -97,9 +94,7 @@ export function createDhfsWorkspaceFolderConfig(
   serverUrl: string
 ): WorkspaceFolderConfig {
   const url = new URL(serverUrl);
-  const uri = vscode.Uri.parse(
-    `${DHFS_SCHEME}:/${url.protocol}${url.hostname}:${url.port}`
-  );
+  const uri = serverUrlToFsRootUri(url);
 
   return {
     uri,
