@@ -241,7 +241,10 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
       throw vscode.FileSystemError.FileNotFound(oldUri);
     }
 
-    const name = row.name.replace(/[^/]+$/, basename(destPath));
+    const destDirId = pathMap.get(dirname(destPath))!.id;
+
+    // name is in format 'parentDirId/filename'
+    const name = `${destDirId}/${basename(destPath)}`;
 
     await webClientData.saveWorkspaceData(
       {
