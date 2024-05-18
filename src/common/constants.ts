@@ -1,3 +1,7 @@
+export const CONFIG_KEY = 'dh-in-vscode';
+export const CONFIG_CORE_SERVERS = 'core-servers';
+export const CONFIG_ENTERPRISE_SERVERS = 'enterprise-servers';
+
 export const DHFS_SCHEME = 'dhfs';
 // const CONNECT_COMMAND = "dh-in-vscode.connect";
 export const RUN_CODE_COMMAND = 'dh-in-vscode.runCode';

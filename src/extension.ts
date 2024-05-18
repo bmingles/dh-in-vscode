@@ -4,12 +4,13 @@ import {
   createConnectStatusBarItem,
   createConnectText,
   createConnectionOption,
+  createConnectionOptions,
   createConnectionQuickPick,
   createDhfsWorkspaceFolderConfig,
   getTempDir,
   isWorkspaceFolderPresent,
 } from './util';
-import { DhcService, DheService } from './services';
+import { Config, DhcService, DheService } from './services';
 import { WebClientDataFsProvider } from './fs/WebClientDataFsProvider';
 import { DhServiceRegistry } from './services';
 import {
@@ -25,26 +26,26 @@ export function activate(context: vscode.ExtensionContext) {
 
   let selectedConnectionUrl: string | null = null;
   let selectedDhService: DhcService | DheService | null = null;
-
-  const config = vscode.workspace.getConfiguration('dh-in-vscode');
-
-  const dhcServerUrls = config.get<string[]>('core-servers') ?? [];
-  const dheServerUrls = config.get<string[]>('enterprise-servers') ?? [];
-
-  const connectionOptions: ConnectionOption[] = [
-    ...dhcServerUrls.map(createConnectionOption('DHC')),
-    ...dheServerUrls.map(createConnectionOption('DHE')),
-  ];
+  let connectionOptions = createConnectionOptions();
 
   const outputChannel = vscode.window.createOutputChannel('Deephaven', 'log');
-  outputChannel.show();
   outputChannel.appendLine('Deephaven extension activated');
+
+  // Update connection options when configuration changes
+  vscode.workspace.onDidChangeConfiguration(
+    () => {
+      outputChannel.appendLine('Configuration changed');
+      connectionOptions = createConnectionOptions();
+    },
+    null,
+    context.subscriptions
+  );
 
   const dhcServiceRegistry = new DhServiceRegistry(DhcService, outputChannel);
   const dheServiceRegistry = new DhServiceRegistry(DheService, outputChannel);
 
   // Register file system provider for DHE servers
-  if (dheServerUrls.length > 0) {
+  if (Config.hasEnterpriseServers()) {
     const webClientDataFs = new WebClientDataFsProvider(dheServiceRegistry);
 
     context.subscriptions.push(
@@ -75,7 +76,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   /** Register extension commands */
   const { runCodeCmd, runSelectionCmd, selectConnectionCmd } = registerCommands(
-    connectionOptions,
+    () => connectionOptions,
     getActiveDhService,
     onConnectionSelected
   );
@@ -123,6 +124,11 @@ export function activate(context: vscode.ExtensionContext) {
    * Handle connection selection
    */
   async function onConnectionSelected(connectionUrl: string) {
+    // Show the output panel whenever we select a connection. This is a little
+    // friendlier to the user instead of it opening when the extension activates
+    // for cases where the user isn't working with DH server
+    outputChannel.show();
+
     outputChannel.appendLine(`Selecting connection: ${connectionUrl}`);
 
     // Clear any previously stored connection
@@ -182,7 +188,7 @@ export function deactivate() {}
 
 /** Register commands for the extension. */
 function registerCommands(
-  connectionOptions: ConnectionOption[],
+  getConnectionOptions: () => ConnectionOption[],
   getActiveDhService: (
     autoActivate: boolean
   ) => Promise<DhcService | DheService | null>,
@@ -213,7 +219,7 @@ function registerCommands(
       const dhService = await getActiveDhService(false);
 
       const result = await createConnectionQuickPick(
-        connectionOptions,
+        getConnectionOptions(),
         dhService?.serverUrl
       );
       if (!result) {

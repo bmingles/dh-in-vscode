@@ -1,9 +1,7 @@
 import * as vscode from 'vscode';
-import {
-  ConnectionType,
-  DHFS_SCHEME,
-  SELECT_CONNECTION_COMMAND,
-} from '../common';
+import { ConnectionType, SELECT_CONNECTION_COMMAND } from '../common';
+import { Config } from '../services';
+import { serverUrlToFsRootUri } from './urlUtils';
 
 export interface ConnectionOption {
   type: ConnectionType;
@@ -64,6 +62,21 @@ export function createConnectionOption(type: ConnectionType) {
 }
 
 /**
+ * Create connection options from current extension config.
+ */
+export function createConnectionOptions(): ConnectionOption[] {
+  const dhcServerUrls = Config.getCoreServers();
+  const dheServerUrls = Config.getEnterpriseServers();
+
+  const connectionOptions: ConnectionOption[] = [
+    ...dhcServerUrls.map(createConnectionOption('DHC')),
+    ...dheServerUrls.map(createConnectionOption('DHE')),
+  ];
+
+  return connectionOptions;
+}
+
+/**
  * Create display text for the connection status bar item.
  * @param connectionDisplay The connection display text
  */
@@ -81,9 +94,7 @@ export function createDhfsWorkspaceFolderConfig(
   serverUrl: string
 ): WorkspaceFolderConfig {
   const url = new URL(serverUrl);
-  const uri = vscode.Uri.parse(
-    `${DHFS_SCHEME}:/${url.protocol}${url.hostname}:${url.port}`
-  );
+  const uri = serverUrlToFsRootUri(url);
 
   return {
     uri,

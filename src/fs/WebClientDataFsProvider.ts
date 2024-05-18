@@ -4,7 +4,7 @@ import { DebouncedEventQueue } from './DebouncedEventQueue';
 import { DhServiceRegistry, DheService } from '../services';
 import { WebClientDataFileNode, WebClientDataFsMap } from '../dh/dhe-fs-types';
 import { CacheService } from '../services/CacheService';
-import { ensureHasTrailingSlash } from '../util';
+import { ensureHasTrailingSlash, getServerUrlAndPath } from '../util';
 import { DHE_CURRENT_FS_VERSION } from '../common';
 
 export class WebClientDataFsProvider implements vscode.FileSystemProvider {
@@ -29,18 +29,50 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
   readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> =
     this._eventQueue.event;
 
-  copy?(
+  /**
+   * Copy files or folders.
+   * @param source
+   * @param destination
+   * @param options
+   */
+  async copy(
     source: vscode.Uri,
     destination: vscode.Uri,
     options: { readonly overwrite: boolean }
-  ): void | Thenable<void> {
-    throw new Error('copy: method not implemented.');
+  ): Promise<void> {
+    console.log('Copy:', source.path, '->', destination.path);
+    const { root, path: sourcePath } = getServerUrlAndPath(source);
+    const { path: destPath } = getServerUrlAndPath(destination);
+
+    const { pathMap } = await this.fsCache.get(root);
+
+    const sourceNode = pathMap.get(sourcePath);
+
+    if (sourceNode == null) {
+      throw vscode.FileSystemError.FileNotFound();
+    }
+
+    if (sourceNode.type === 'Folder') {
+      throw new Error('Copy folder not yet supported.');
+    }
+
+    const destNode = pathMap.get(destPath);
+    if (destNode) {
+      throw new Error('Target file already exists.');
+    }
+
+    const file = await this.readFile(source);
+    await this.writeFile(destination, file, { create: true, overwrite: false });
   }
 
+  /**
+   * Create a new directory.
+   * @param uri
+   */
   async createDirectory(uri: vscode.Uri): Promise<void> {
     console.log('createDirectory:', uri.path);
 
-    const { root, path } = splitPath(uri.path);
+    const { root, path } = getServerUrlAndPath(uri);
     const { dirMap, pathMap } = await this.fsCache.get(root);
 
     const dheService = await this.dheServiceRegistry.get(root);
@@ -84,7 +116,7 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     uri: vscode.Uri,
     options: { readonly recursive: boolean }
   ): Promise<void> {
-    const { root, path } = splitPath(uri.path);
+    const { root, path } = getServerUrlAndPath(uri);
     console.log('delete:', uri.path, { root, path });
 
     const { dirMap, pathMap } = await this.fsCache.get(root);
@@ -135,10 +167,14 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     pathMap.delete(path);
   }
 
+  /**
+   * Retrieve all files and folders in a directory.
+   * @param uri
+   */
   async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
     console.log('readDirectory:', uri.path);
 
-    const { root, path } = splitPath(uri.path);
+    const { root, path } = getServerUrlAndPath(uri);
 
     const { dirMap } = await this.fsCache.get(root);
 
@@ -157,9 +193,13 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     return result;
   }
 
+  /**
+   * Read the entire contents of a file.
+   * @param uri
+   */
   async readFile(uri: vscode.Uri): Promise<Uint8Array> {
     console.log('readFile:', uri.path);
-    const { root, path } = splitPath(uri.path);
+    const { root, path } = getServerUrlAndPath(uri);
     const { pathMap } = await this.fsCache.get(root);
 
     const node = pathMap.get(path);
@@ -169,12 +209,58 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     throw vscode.FileSystemError.FileNotFound();
   }
 
-  rename(
+  /**
+   * Rename a file or folder.
+   * @param oldUri
+   * @param newUri
+   * @param options
+   */
+  async rename(
     oldUri: vscode.Uri,
     newUri: vscode.Uri,
     options: { readonly overwrite: boolean }
-  ): void | Thenable<void> {
-    throw new Error('rename: method not implemented.');
+  ): Promise<void> {
+    const { root, path: sourcePath } = getServerUrlAndPath(oldUri);
+    const { path: destPath } = getServerUrlAndPath(newUri);
+
+    const { pathMap } = await this.fsCache.get(root);
+
+    const sourceNode = pathMap.get(sourcePath);
+    if (sourceNode == null) {
+      throw vscode.FileSystemError.FileNotFound(oldUri);
+    }
+
+    const dheService = await this.dheServiceRegistry.get(root);
+    const webClientData = await dheService.getWebClientData();
+
+    const row = await dheService.getWorkspaceRowById<{
+      name: string;
+      data: { content: unknown };
+    }>(webClientData, sourceNode.id);
+    if (row == null) {
+      throw vscode.FileSystemError.FileNotFound(oldUri);
+    }
+
+    const destDirId = pathMap.get(dirname(destPath))!.id;
+
+    // name is in format 'parentDirId/filename'
+    const name = `${destDirId}/${basename(destPath)}`;
+
+    await webClientData.saveWorkspaceData(
+      {
+        ...row,
+        data: JSON.stringify({ content: row.data.content }),
+        name,
+        nameLowercase: name.toLowerCase(),
+      },
+      DHE_CURRENT_FS_VERSION
+    );
+
+    this.fsCache.clearCache();
+
+    // TODO: Figure out how to know when the rename is complete. For some reason
+    // it is not available immediately after `saveWorkspaceData` is called
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   /**
@@ -182,8 +268,15 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
    * @param uri The URI of the file to retrieve metadata for.
    */
   async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
-    const { root, path } = splitPath(uri.path);
-    console.log('stat:', uri.path, { root, path });
+    const { root, path } = getServerUrlAndPath(uri);
+    console.log('stat:', uri.path, { isRoot: path === '/', root, path });
+
+    // This seems to be a reasonable place to clear the fs cache. It fires
+    // whenever focus leaves vscode and returns or when refresh file explorer
+    // button is clicked.
+    if (path === '/') {
+      this.fsCache.clearCache();
+    }
 
     if (uri.path === '/' || path === '/') {
       return {
@@ -220,6 +313,27 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     throw vscode.FileSystemError.FileNotFound(uri);
   }
 
+  /**
+   * Subscribes to file change events in the file or folder denoted by uri. For
+   * folders, the option recursive indicates whether subfolders, sub-subfolders,
+   * etc. should be watched for file changes as well. With recursive: false,
+   * only changes to the files that are direct children of the folder should
+   * trigger an event.
+   *
+   * The excludes array is used to indicate paths that should be excluded from
+   * file watching. It is typically derived from the files.watcherExclude setting that is configurable by the user. Each entry can be be:
+   *
+   * - the absolute path to exclude
+   * - a relative path to exclude (for example build/output)
+   * - a simple glob pattern (for example **​/build, output/**)
+   *
+   * It is the file system provider's job to call onDidChangeFile for every
+   * change given these rules. No event should be emitted for files that match
+   * any of the provided excludes.
+   * @param uri
+   * @param options
+   * @returns
+   */
   watch(
     uri: vscode.Uri,
     options: {
@@ -227,16 +341,23 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
       readonly excludes: readonly string[];
     }
   ): vscode.Disposable {
+    console.log('watch:', uri.path, options);
     return new vscode.Disposable(() => {});
   }
 
+  /**
+   * Write a file to the FS
+   * @param uri
+   * @param contentArray
+   * @param options
+   */
   async writeFile(
     uri: vscode.Uri,
     contentArray: Uint8Array,
     _options: { readonly create: boolean; readonly overwrite: boolean }
   ): Promise<void> {
     console.log('writeFile:', uri.path);
-    const { root, path } = splitPath(uri.path);
+    const { root, path } = getServerUrlAndPath(uri);
     const { dirMap, pathMap } = await this.fsCache.get(root);
 
     const doc = pathMap.get(path);
@@ -297,14 +418,4 @@ export class WebClientDataFsProvider implements vscode.FileSystemProvider {
     // 2. update Data column with new content (stringified JSON)
     // 3. saveWorkspaceData (WorkspaceStorage.saveData)
   }
-}
-
-function splitPath(fullPath: string): { root: string; path: string } {
-  const [, root = '', path = ''] = /\/([^/]+)(.*)$/.exec(fullPath) ?? [];
-  const trailingSlashRegEx = /\/$/;
-
-  return {
-    root: root.replace(/^(https?:)/, '$1//'),
-    path: path === '' ? '/' : path.replace(trailingSlashRegEx, ''),
-  };
 }

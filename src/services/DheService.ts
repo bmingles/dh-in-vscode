@@ -231,15 +231,15 @@ export class DheService extends DhService<
     return getWebClientData(this.dh, this.client);
   }
 
-  public async getWorkspaceRowById(
+  public async getWorkspaceRowById<T = DeserializedRowData>(
     webClientData: QueryInfo,
     id: string
-  ): Promise<DeserializedRowData | null> {
+  ): Promise<T | null> {
     if (this.dh == null) {
       throw new Error('Deephaven API not initialized');
     }
 
-    return getWorkspaceRowById(this.dh, webClientData, id);
+    return getWorkspaceRowById(this.dh, webClientData, id) as T;
   }
 }
 

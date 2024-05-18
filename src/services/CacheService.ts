@@ -27,4 +27,8 @@ export class CacheService<T> {
 
     return this.cachedPromises.get(normalizeKey)!;
   }
+
+  public clearCache(): void {
+    this.cachedPromises.clear();
+  }
 }
