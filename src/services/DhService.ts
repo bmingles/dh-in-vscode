@@ -162,6 +162,11 @@ export abstract class DhService<
       const icon = icons[type as IconType] ?? type;
       this.outputChannel.appendLine(`${icon} ${title}`);
 
+      // Don't show panels for variables starting with '_'
+      if (title.startsWith('_')) {
+        return;
+      }
+
       if (!this.panels.has(title)) {
         const panel = vscode.window.createWebviewPanel(
           'dhPanel', // Identifies the type of the webview. Used internally
