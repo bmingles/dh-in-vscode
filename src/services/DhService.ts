@@ -156,6 +156,7 @@ export abstract class DhService<
 
     if (error) {
       console.error(error);
+      this.outputChannel.show();
       this.outputChannel.appendLine(error);
       vscode.window.showErrorMessage(
         'An error occurred when running a command'

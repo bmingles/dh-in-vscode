@@ -22,15 +22,26 @@ export interface WorkspaceFolderConfig {
 export async function createConnectionQuickPick(
   connectionOptions: ConnectionOption[],
   selectedUrl?: string | null
-) {
-  return await vscode.window.showQuickPick(
-    connectionOptions.map(option => ({
+): Promise<ConnectionOption | { label: string; url: null } | undefined> {
+  function padLabel(label: string, isSelected: boolean) {
+    return isSelected ? `$(circle-filled) ${label}` : `      ${label}`;
+  }
+
+  const options = [
+    {
+      label: padLabel(
+        selectedUrl == null ? 'Disconnected' : 'Disconnect',
+        selectedUrl == null
+      ),
+      url: null,
+    },
+    ...connectionOptions.map(option => ({
       ...option,
-      label: `${option.url === selectedUrl ? '$(circle-filled) ' : '      '} ${
-        option.label
-      }`,
-    }))
-  );
+      label: padLabel(option.label, option.url === selectedUrl),
+    })),
+  ];
+
+  return await vscode.window.showQuickPick(options);
 }
 
 /**
