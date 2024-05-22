@@ -67,6 +67,16 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "dh-in-vscode.runCode",
+          "when": "false"
+        },
+        {
+          "command": "dh-in-vscode.runSelection",
+          "when": "false"
+        }
+      ],
       "editor/title": [
         {
           "command": "dh-in-vscode.runCode",
