@@ -5,8 +5,8 @@ Deephaven in VS Code
 - Run Python dh scripts from vscode against a running DH core server
   - Run all
   - Run selected code
-- View output in vscode (depends on `embed-widget` which currently doesn't support `Deephaven UI` but does support tables and charts)
-- View output in DH (depends on [pr#1925](https://github.com/deephaven/web-client-ui/pull/1925) to automatically update panels)
+- View output in vscode panels
+- View output in DH panels (depends on [pr#1925](https://github.com/deephaven/web-client-ui/pull/1925) to automatically update panels)
 
 ![Deephaven in VS Code Extension](docs/extension.png)
 
@@ -121,3 +121,4 @@ The extension dynamically downloads and loads the DH JS API from a DH Core serve
 - Auto connect to server option?
 - Mocking partial browser apis breaks other extensions
 - Make sure DH subscriptions are properly cleaned up
+- Need to detect invalid connection if server restarts (presumably other scenarios as well)

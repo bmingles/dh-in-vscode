@@ -131,12 +131,12 @@ export abstract class DhService<
     }
 
     const selectionRange =
-      selectionOnly && editor.selection?.isEmpty === false
+      selectionOnly && editor.selection
         ? new vscode.Range(
             editor.selection.start.line,
-            editor.selection.start.character,
+            0,
             editor.selection.end.line,
-            editor.selection.end.character
+            editor.document.lineAt(editor.selection.end.line).text.length
           )
         : undefined;
 

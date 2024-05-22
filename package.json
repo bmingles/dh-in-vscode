@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/bmingles/dh-in-vscode"
   },
-  "version": "0.0.10",
+  "version": "0.0.11",
   "engines": {
     "vscode": "^1.87.0"
   },
@@ -75,12 +75,12 @@
         {
           "command": "dh-in-vscode.runCode",
           "group": "navigation",
-          "when": "editorLangId == python && editorFocus"
+          "when": "editorLangId == python"
         },
         {
           "command": "dh-in-vscode.runSelection",
           "group": "navigation",
-          "when": "editorLangId == python && editorFocus && editorHasSelection"
+          "when": "editorLangId == python"
         }
       ]
     }

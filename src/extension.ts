@@ -186,6 +186,18 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
+async function ensureUriEditorIsActive(uri: vscode.Uri) {
+  const isActive =
+    uri.toString() === vscode.window.activeTextEditor?.document.uri.toString();
+
+  // If another panel such as the output panel is active, set the document
+  // for the url to active first
+  if (!isActive) {
+    // https://stackoverflow.com/a/64808497/20489
+    await vscode.window.showTextDocument(uri, { preview: false });
+  }
+}
+
 /** Register commands for the extension. */
 function registerCommands(
   getConnectionOptions: () => ConnectionOption[],
@@ -195,20 +207,32 @@ function registerCommands(
   onConnectionSelected: (connectionUrl: string) => void
 ) {
   /** Run all code in active editor */
-  const runCodeCmd = vscode.commands.registerTextEditorCommand(
+  const runCodeCmd = vscode.commands.registerCommand(
     RUN_CODE_COMMAND,
-    async editor => {
-      const dhService = await getActiveDhService(true);
-      dhService?.runEditorCode(editor);
+    async (uri: vscode.Uri, _arg: { groupId: number }) => {
+      await ensureUriEditorIsActive(uri);
+
+      const editor = vscode.window.activeTextEditor;
+
+      if (editor) {
+        const dhService = await getActiveDhService(true);
+        dhService?.runEditorCode(editor);
+      }
     }
   );
 
   /** Run selected code in active editor */
-  const runSelectionCmd = vscode.commands.registerTextEditorCommand(
+  const runSelectionCmd = vscode.commands.registerCommand(
     RUN_SELECTION_COMMAND,
-    async editor => {
-      const dhService = await getActiveDhService(true);
-      dhService?.runEditorCode(editor, true);
+    async (uri: vscode.Uri, _arg: { groupId: number }) => {
+      await ensureUriEditorIsActive(uri);
+
+      const editor = vscode.window.activeTextEditor;
+
+      if (editor) {
+        const dhService = await getActiveDhService(true);
+        dhService?.runEditorCode(editor, true);
+      }
     }
   );
 
