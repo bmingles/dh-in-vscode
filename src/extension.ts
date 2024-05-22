@@ -127,7 +127,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Show the output panel whenever we select a connection. This is a little
     // friendlier to the user instead of it opening when the extension activates
     // for cases where the user isn't working with DH server
-    outputChannel.show();
+    outputChannel.show(true);
 
     outputChannel.appendLine(
       connectionUrl == null

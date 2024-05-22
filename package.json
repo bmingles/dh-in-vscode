@@ -53,12 +53,12 @@
     "commands": [
       {
         "command": "dh-in-vscode.runCode",
-        "title": "Deephaven: Run",
+        "title": "Run Deephaven File",
         "icon": "$(run-all)"
       },
       {
         "command": "dh-in-vscode.runSelection",
-        "title": "Deephaven: Run Selected",
+        "title": "Run Deephaven Selected Lines",
         "icon": "$(run)"
       },
       {
@@ -77,7 +77,7 @@
           "when": "false"
         }
       ],
-      "editor/title": [
+      "editor/title/run": [
         {
           "command": "dh-in-vscode.runCode",
           "group": "navigation",

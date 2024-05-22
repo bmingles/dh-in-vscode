@@ -120,7 +120,9 @@ export abstract class DhService<
       return;
     }
 
-    this.outputChannel.appendLine(`Sending code to: ${this.serverUrl}`);
+    this.outputChannel.appendLine(
+      `Sending${selectionOnly ? ' selected' : ''} code to: ${this.serverUrl}`
+    );
 
     if (this.session == null) {
       await this.initDh();
@@ -156,7 +158,7 @@ export abstract class DhService<
 
     if (error) {
       console.error(error);
-      this.outputChannel.show();
+      this.outputChannel.show(true);
       this.outputChannel.appendLine(error);
       vscode.window.showErrorMessage(
         'An error occurred when running a command'
@@ -180,7 +182,7 @@ export abstract class DhService<
         const panel = vscode.window.createWebviewPanel(
           'dhPanel', // Identifies the type of the webview. Used internally
           title,
-          vscode.ViewColumn.Two,
+          { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
           {
             enableScripts: true,
             retainContextWhenHidden: true,
