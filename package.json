@@ -52,10 +52,6 @@
     ],
     "commands": [
       {
-        "command": "dh-in-vscode.connect",
-        "title": "Deephaven: Connect Server"
-      },
-      {
         "command": "dh-in-vscode.runCode",
         "title": "Deephaven: Run",
         "icon": "$(run-all)"
