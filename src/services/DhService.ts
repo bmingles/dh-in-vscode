@@ -144,11 +144,19 @@ export abstract class DhService<
 
     console.log('Sending text to dh:', text);
 
-    const result = await this.runCode(text);
+    let result: CommandResultBase;
+    let error: string | null = null;
 
-    if (result.error) {
-      console.error(result.error);
-      this.outputChannel.appendLine(result.error);
+    try {
+      result = await this.runCode(text);
+      error = result.error;
+    } catch (err) {
+      error = String(err);
+    }
+
+    if (error) {
+      console.error(error);
+      this.outputChannel.appendLine(error);
       vscode.window.showErrorMessage(
         'An error occurred when running a command'
       );
@@ -156,7 +164,7 @@ export abstract class DhService<
       return;
     }
 
-    const changed = [...result.changes.created, ...result.changes.updated];
+    const changed = [...result!.changes.created, ...result!.changes.updated];
 
     changed.forEach(({ title = 'Unknown', type }, i) => {
       const icon = icons[type as IconType] ?? type;
