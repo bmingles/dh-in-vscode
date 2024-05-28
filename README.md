@@ -60,16 +60,20 @@ Scripts will be run against the active connection or default to the first connec
 
 1. Start a DH core server at http://localhost:1000
 2. Open a DH Python script in vscode
-3. Click the `Deephaven: Run` button in the top right of the editor
+3. Click the caret on the `Run` button in the top right of the editor and select `Run Deephaven File`
 
    ![Deephaven: Run](docs/run.png)
+
+Note that `vscode` will remember your selection so you can just click the `run` button (play icon) the next time.
 
 ### Run a selection
 
 1. Select text to run
-2. Should see new button appear in top right
+2. Click the caret on the `Run` button in the top right of the editor and select `Run Deephaven Selected Lines`
 
    ![Deephaven: Run Selection](docs/run-selection.png)
+
+Note that `vscode` will remember your selection so you can just click the `run` button (play icon) the next time.
 
 ## Code Snippets
 
