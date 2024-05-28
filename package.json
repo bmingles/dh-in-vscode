@@ -97,7 +97,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "package": "vsce package -o releases/ && vsce package -o releases/latest.vsix",
+    "package": "vsce package -o releases/ && vsce package -o releases/dh-in-vscode-latest.vsix",
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {

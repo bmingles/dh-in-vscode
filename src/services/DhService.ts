@@ -170,6 +170,8 @@ export abstract class DhService<
 
     const changed = [...result!.changes.created, ...result!.changes.updated];
 
+    let lastPanel: vscode.WebviewPanel | null = null;
+
     changed.forEach(({ title = 'Unknown', type }, i) => {
       const icon = icons[type as IconType] ?? type;
       this.outputChannel.appendLine(`${icon} ${title}`);
@@ -183,11 +185,7 @@ export abstract class DhService<
         const panel = vscode.window.createWebviewPanel(
           'dhPanel', // Identifies the type of the webview. Used internally
           title,
-          // set `preserveFocus` to false so that panel associated with running
-          // script gets focus. Note that the tab group will then get blurred
-          // by the `PanelFocusManager`, but the resulting tab should still be
-          // the active tab within the non-active tab group.
-          { viewColumn: vscode.ViewColumn.Two, preserveFocus: false },
+          { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
           {
             enableScripts: true,
             retainContextWhenHidden: true,
@@ -208,10 +206,10 @@ export abstract class DhService<
       }
 
       const panel = this.panels.get(title)!;
+      lastPanel = panel;
       this.panelFocusManager.initialize(panel);
 
       panel.webview.html = this.getPanelHtml(title);
-      panel.reveal();
 
       // TODO: This seems to be subscribing multiple times. Need to see if we
       // can move it inside of the panel creation block
@@ -223,6 +221,8 @@ export abstract class DhService<
             .webview.postMessage.bind(this.panels.get(title)!.webview)
         );
       });
+
+      lastPanel?.reveal();
     });
   }
 }
@@ -255,6 +255,10 @@ class PanelFocusManager {
   >();
 
   initialize(panel: vscode.WebviewPanel): void {
+    console.log('Initializing panel:', panel.title, 2);
+
+    // Only count the last panel initialized
+    this.panelsPendingInitialFocus = new WeakMap();
     this.panelsPendingInitialFocus.set(panel, 2);
   }
 
@@ -266,6 +270,11 @@ class PanelFocusManager {
         vscode.window.activeTextEditor!.viewColumn;
 
       const pendingChangeCount = this.panelsPendingInitialFocus.get(panel) ?? 0;
+      console.log(
+        'Pending panel change count:',
+        panel.title,
+        pendingChangeCount
+      );
 
       if (!uri || !didChangeFocus || pendingChangeCount <= 0) {
         return;
