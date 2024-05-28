@@ -122,3 +122,4 @@ The extension dynamically downloads and loads the DH JS API from a DH Core serve
 - Mocking partial browser apis breaks other extensions
 - Make sure DH subscriptions are properly cleaned up
 - Need to detect invalid connection if server restarts (presumably other scenarios as well)
+- Split out PanelService

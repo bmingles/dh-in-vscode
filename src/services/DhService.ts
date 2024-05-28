@@ -37,6 +37,7 @@ export abstract class DhService<
 
   protected outputChannel: vscode.OutputChannel;
   private panels = new Map<string, vscode.WebviewPanel>();
+  private panelFocusManager = new PanelFocusManager();
   private cachedCreateClient: Promise<TClient> | null = null;
   private cachedCreateSession: Promise<TSession | null> | null = null;
   private cachedInitApi: Promise<TDH> | null = null;
@@ -182,7 +183,11 @@ export abstract class DhService<
         const panel = vscode.window.createWebviewPanel(
           'dhPanel', // Identifies the type of the webview. Used internally
           title,
-          { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
+          // set `preserveFocus` to false so that panel associated with running
+          // script gets focus. Note that the tab group will then get blurred
+          // by the `PanelFocusManager`, but the resulting tab should still be
+          // the active tab within the non-active tab group.
+          { viewColumn: vscode.ViewColumn.Two, preserveFocus: false },
           {
             enableScripts: true,
             retainContextWhenHidden: true,
@@ -191,16 +196,25 @@ export abstract class DhService<
 
         this.panels.set(title, panel);
 
-        // If panel gets disposed, remove it from the cache
+        // If panel gets disposed, remove it from the caches
         panel.onDidDispose(() => {
           this.panels.delete(title);
         });
+
+        // Ensure focus is not stolen when panel is loaded
+        panel.onDidChangeViewState(
+          this.panelFocusManager.handleOnDidChangeViewState(panel)
+        );
       }
 
       const panel = this.panels.get(title)!;
+      this.panelFocusManager.initialize(panel);
 
       panel.webview.html = this.getPanelHtml(title);
+      panel.reveal();
 
+      // TODO: This seems to be subscribing multiple times. Need to see if we
+      // can move it inside of the panel creation block
       panel.webview.onDidReceiveMessage(({ data }) => {
         this.handlePanelMessage(
           data,
@@ -214,3 +228,55 @@ export abstract class DhService<
 }
 
 export default DhService;
+
+/*
+ * Panels steal focus when they finish loading which causes the run
+ * buttons to disappear. To fix this:
+ *
+ * 1. Track a panel in `panelsPendingInitialFocus` before setting html (in `runEditorCode`)
+ * 2. If panel state changes in a way that results in tabgroup changing, stop
+ * tracking the panel and restore the focus to the original editor
+ */
+class PanelFocusManager {
+  /**
+   * Panels steal focus when they finish loading which causes the run buttons to
+   * disappear. To fix this:
+   * 1. Track a panel in `panelsPendingInitialFocus` before setting html. We set
+   * a counter of 2 because we expect 2 state changes to happen to the panel that
+   * result in the tabgroup switching (1 when we call reveal and 1 when the panel
+   * finishes loading and steals focus)
+   * 2. If panel state changes in a way that results in tabgroup changing,
+   * decrement the counter for the panel. Once the counter hits zero, restore
+   * the focus to the original editor
+   */
+  private panelsPendingInitialFocus = new WeakMap<
+    vscode.WebviewPanel,
+    number
+  >();
+
+  initialize(panel: vscode.WebviewPanel): void {
+    this.panelsPendingInitialFocus.set(panel, 2);
+  }
+
+  handleOnDidChangeViewState(panel: vscode.WebviewPanel): () => void {
+    return (): void => {
+      const uri = vscode.window.activeTextEditor?.document.uri;
+      const didChangeFocus =
+        vscode.window.tabGroups.activeTabGroup.viewColumn !==
+        vscode.window.activeTextEditor!.viewColumn;
+
+      const pendingChangeCount = this.panelsPendingInitialFocus.get(panel) ?? 0;
+
+      if (!uri || !didChangeFocus || pendingChangeCount <= 0) {
+        return;
+      }
+
+      this.panelsPendingInitialFocus.set(panel, pendingChangeCount - 1);
+
+      vscode.window.showTextDocument(uri, {
+        preview: false,
+        viewColumn: vscode.window.activeTextEditor!.viewColumn,
+      });
+    };
+  }
+}
