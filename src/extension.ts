@@ -123,13 +123,17 @@ export function activate(context: vscode.ExtensionContext) {
   /**
    * Handle connection selection
    */
-  async function onConnectionSelected(connectionUrl: string) {
+  async function onConnectionSelected(connectionUrl: string | null) {
     // Show the output panel whenever we select a connection. This is a little
     // friendlier to the user instead of it opening when the extension activates
     // for cases where the user isn't working with DH server
-    outputChannel.show();
+    outputChannel.show(true);
 
-    outputChannel.appendLine(`Selecting connection: ${connectionUrl}`);
+    outputChannel.appendLine(
+      connectionUrl == null
+        ? 'Disconnecting'
+        : `Selecting connection: ${connectionUrl}`
+    );
 
     // Clear any previously stored connection
     context.globalState.update(WS_FOLDER_CONNECTION_URL, null);
@@ -138,7 +142,13 @@ export function activate(context: vscode.ExtensionContext) {
       option => option.url === connectionUrl
     );
 
-    if (!option) {
+    // Disconnect option was selected, or connectionUrl that no longer exists
+    if (connectionUrl == null || !option) {
+      selectedConnectionUrl = null;
+      selectedDhService = null;
+      connectStatusBarItem.text = createConnectText('Disconnected');
+      dhcServiceRegistry.clearCache();
+      dheServiceRegistry.clearCache();
       return;
     }
 
@@ -186,29 +196,53 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
+async function ensureUriEditorIsActive(uri: vscode.Uri) {
+  const isActive =
+    uri.toString() === vscode.window.activeTextEditor?.document.uri.toString();
+
+  // If another panel such as the output panel is active, set the document
+  // for the url to active first
+  if (!isActive) {
+    // https://stackoverflow.com/a/64808497/20489
+    await vscode.window.showTextDocument(uri, { preview: false });
+  }
+}
+
 /** Register commands for the extension. */
 function registerCommands(
   getConnectionOptions: () => ConnectionOption[],
   getActiveDhService: (
     autoActivate: boolean
   ) => Promise<DhcService | DheService | null>,
-  onConnectionSelected: (connectionUrl: string) => void
+  onConnectionSelected: (connectionUrl: string | null) => void
 ) {
   /** Run all code in active editor */
-  const runCodeCmd = vscode.commands.registerTextEditorCommand(
+  const runCodeCmd = vscode.commands.registerCommand(
     RUN_CODE_COMMAND,
-    async editor => {
-      const dhService = await getActiveDhService(true);
-      dhService?.runEditorCode(editor);
+    async (uri: vscode.Uri, _arg: { groupId: number }) => {
+      await ensureUriEditorIsActive(uri);
+
+      const editor = vscode.window.activeTextEditor;
+
+      if (editor) {
+        const dhService = await getActiveDhService(true);
+        dhService?.runEditorCode(editor);
+      }
     }
   );
 
   /** Run selected code in active editor */
-  const runSelectionCmd = vscode.commands.registerTextEditorCommand(
+  const runSelectionCmd = vscode.commands.registerCommand(
     RUN_SELECTION_COMMAND,
-    async editor => {
-      const dhService = await getActiveDhService(true);
-      dhService?.runEditorCode(editor, true);
+    async (uri: vscode.Uri, _arg: { groupId: number }) => {
+      await ensureUriEditorIsActive(uri);
+
+      const editor = vscode.window.activeTextEditor;
+
+      if (editor) {
+        const dhService = await getActiveDhService(true);
+        dhService?.runEditorCode(editor, true);
+      }
     }
   );
 

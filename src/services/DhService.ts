@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
-import type { dh as DhType } from '../dh/dhc-types';
+import type { dh as DhcType } from '../dh/dhc-types';
+import { hasErrorCode } from '../util/typeUtils';
+import { ConnectionAndSession } from '../common';
+import { formatTimestamp } from '../util';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const icons = {
@@ -13,45 +16,48 @@ type IconType = keyof typeof icons;
 
 // Common command result types shared by DHC and DHE
 type ChangesBase = {
-  removed: Partial<DhType.ide.VariableDefinition>[];
-  created: Partial<DhType.ide.VariableDefinition>[];
-  updated: Partial<DhType.ide.VariableDefinition>[];
+  removed: Partial<DhcType.ide.VariableDefinition>[];
+  created: Partial<DhcType.ide.VariableDefinition>[];
+  updated: Partial<DhcType.ide.VariableDefinition>[];
 };
 type CommandResultBase = {
   changes: ChangesBase;
   error: string;
 };
 
-export abstract class DhService<
-  TDH,
-  TSession,
-  TClient,
-  TCommandResult extends CommandResultBase
-> {
+export abstract class DhService<TDH, TClient> {
   constructor(serverUrl: string, outputChannel: vscode.OutputChannel) {
     this.serverUrl = serverUrl;
     this.outputChannel = outputChannel;
   }
 
   public readonly serverUrl: string;
+  protected readonly subscriptions: (() => void)[] = [];
 
   protected outputChannel: vscode.OutputChannel;
   private panels = new Map<string, vscode.WebviewPanel>();
+  private panelFocusManager = new PanelFocusManager();
   private cachedCreateClient: Promise<TClient> | null = null;
-  private cachedCreateSession: Promise<TSession | null> | null = null;
+  private cachedCreateSession: Promise<ConnectionAndSession<
+    DhcType.IdeConnection,
+    DhcType.IdeSession
+  > | null> | null = null;
   private cachedInitApi: Promise<TDH> | null = null;
 
   protected dh: TDH | null = null;
+  protected cn: DhcType.IdeConnection | null = null;
   protected client: TClient | null = null;
-  protected session: TSession | null = null;
+  protected session: DhcType.IdeSession | null = null;
 
   protected abstract initApi(): Promise<TDH>;
   protected abstract createClient(dh: TDH): Promise<TClient>;
   protected abstract createSession(
     dh: TDH,
     client: TClient
-  ): Promise<TSession | null>;
-  protected abstract runCode(text: string): Promise<TCommandResult>;
+  ): Promise<ConnectionAndSession<
+    DhcType.IdeConnection,
+    DhcType.IdeSession
+  > | null>;
   protected abstract getPanelHtml(title: string): string;
   protected abstract handlePanelMessage(
     message: {
@@ -60,6 +66,18 @@ export abstract class DhService<
     },
     postResponseMessage: (response: unknown) => void
   ): Promise<void>;
+
+  private clearCaches(): void {
+    this.cachedCreateClient = null;
+    this.cachedCreateSession = null;
+    this.cachedInitApi = null;
+    this.client = null;
+    this.cn = null;
+    this.dh = null;
+    this.session = null;
+
+    this.subscriptions.forEach(dispose => dispose());
+  }
 
   public get isInitialized(): boolean {
     return this.cachedInitApi != null;
@@ -79,6 +97,7 @@ export abstract class DhService<
         `Initialized Deephaven API: ${this.serverUrl}`
       );
     } catch (err) {
+      this.clearCaches();
       console.error(err);
       this.outputChannel.appendLine(
         `Failed to initialize Deephaven API: ${err}`
@@ -96,10 +115,47 @@ export abstract class DhService<
     if (this.cachedCreateSession == null) {
       this.outputChannel.appendLine('Creating session...');
       this.cachedCreateSession = this.createSession(this.dh, this.client);
-    }
-    this.session = await this.cachedCreateSession;
 
-    if (this.session == null) {
+      const { cn = null, session = null } =
+        (await this.cachedCreateSession) ?? {};
+
+      // TODO: Use constant event name
+      if (cn != null) {
+        this.subscriptions.push(
+          cn.addEventListener('disconnect', () => {
+            this.clearCaches();
+
+            vscode.window.showInformationMessage(
+              `Disconnected from Deephaven server: ${this.serverUrl}`
+            );
+          })
+        );
+      }
+
+      if (session != null) {
+        session.onLogMessage(logItem => {
+          // TODO: Should this pull log level from config somewhere?
+          if (logItem.logLevel !== 'INFO') {
+            const date = new Date(logItem.micros / 1000);
+            const timestamp = formatTimestamp(date);
+
+            this.outputChannel.append(
+              `${timestamp} ${logItem.logLevel} ${logItem.message}`
+            );
+          }
+        });
+      }
+    }
+
+    const { cn = null, session = null } =
+      (await this.cachedCreateSession) ?? {};
+
+    this.cn = cn;
+    this.session = session;
+
+    if (this.cn == null || this.session == null) {
+      this.clearCaches();
+
       vscode.window.showErrorMessage(
         `Failed to create Deephaven session: ${this.serverUrl}`
       );
@@ -120,7 +176,9 @@ export abstract class DhService<
       return;
     }
 
-    this.outputChannel.appendLine(`Sending code to: ${this.serverUrl}`);
+    // this.outputChannel.appendLine(
+    //   `Sending${selectionOnly ? ' selected' : ''} code to: ${this.serverUrl}`
+    // );
 
     if (this.session == null) {
       await this.initDh();
@@ -131,12 +189,12 @@ export abstract class DhService<
     }
 
     const selectionRange =
-      selectionOnly && editor.selection?.isEmpty === false
+      selectionOnly && editor.selection
         ? new vscode.Range(
             editor.selection.start.line,
-            editor.selection.start.character,
+            0,
             editor.selection.end.line,
-            editor.selection.end.character
+            editor.document.lineAt(editor.selection.end.line).text.length
           )
         : undefined;
 
@@ -144,11 +202,30 @@ export abstract class DhService<
 
     console.log('Sending text to dh:', text);
 
-    const result = await this.runCode(text);
+    let result: CommandResultBase;
+    let error: string | null = null;
 
-    if (result.error) {
-      console.error(result.error);
-      this.outputChannel.appendLine(result.error);
+    try {
+      result = await this.session.runCode(text);
+      error = result.error;
+    } catch (err) {
+      error = String(err);
+
+      // Grpc UNAUTHENTICATED code. This should not generally happen since we
+      // clear the caches on connection disconnect
+      if (hasErrorCode(err, 16)) {
+        this.clearCaches();
+        vscode.window.showErrorMessage(
+          'Session is no longer invalid. Please re-run the command to reconnect.'
+        );
+        return;
+      }
+    }
+
+    if (error) {
+      console.error(error);
+      this.outputChannel.show(true);
+      this.outputChannel.appendLine(error);
       vscode.window.showErrorMessage(
         'An error occurred when running a command'
       );
@@ -156,17 +233,24 @@ export abstract class DhService<
       return;
     }
 
-    const changed = [...result.changes.created, ...result.changes.updated];
+    const changed = [...result!.changes.created, ...result!.changes.updated];
+
+    let lastPanel: vscode.WebviewPanel | null = null;
 
     changed.forEach(({ title = 'Unknown', type }, i) => {
       const icon = icons[type as IconType] ?? type;
       this.outputChannel.appendLine(`${icon} ${title}`);
 
+      // Don't show panels for variables starting with '_'
+      if (title.startsWith('_')) {
+        return;
+      }
+
       if (!this.panels.has(title)) {
         const panel = vscode.window.createWebviewPanel(
           'dhPanel', // Identifies the type of the webview. Used internally
           title,
-          vscode.ViewColumn.Two,
+          { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
           {
             enableScripts: true,
             retainContextWhenHidden: true,
@@ -175,16 +259,25 @@ export abstract class DhService<
 
         this.panels.set(title, panel);
 
-        // If panel gets disposed, remove it from the cache
+        // If panel gets disposed, remove it from the caches
         panel.onDidDispose(() => {
           this.panels.delete(title);
         });
+
+        // Ensure focus is not stolen when panel is loaded
+        panel.onDidChangeViewState(
+          this.panelFocusManager.handleOnDidChangeViewState(panel)
+        );
       }
 
       const panel = this.panels.get(title)!;
+      lastPanel = panel;
+      this.panelFocusManager.initialize(panel);
 
       panel.webview.html = this.getPanelHtml(title);
 
+      // TODO: This seems to be subscribing multiple times. Need to see if we
+      // can move it inside of the panel creation block
       panel.webview.onDidReceiveMessage(({ data }) => {
         this.handlePanelMessage(
           data,
@@ -193,8 +286,71 @@ export abstract class DhService<
             .webview.postMessage.bind(this.panels.get(title)!.webview)
         );
       });
+
+      lastPanel?.reveal();
     });
   }
 }
 
 export default DhService;
+
+/*
+ * Panels steal focus when they finish loading which causes the run
+ * buttons to disappear. To fix this:
+ *
+ * 1. Track a panel in `panelsPendingInitialFocus` before setting html (in `runEditorCode`)
+ * 2. If panel state changes in a way that results in tabgroup changing, stop
+ * tracking the panel and restore the focus to the original editor
+ */
+class PanelFocusManager {
+  /**
+   * Panels steal focus when they finish loading which causes the run buttons to
+   * disappear. To fix this:
+   * 1. Track a panel in `panelsPendingInitialFocus` before setting html. We set
+   * a counter of 2 because we expect 2 state changes to happen to the panel that
+   * result in the tabgroup switching (1 when we call reveal and 1 when the panel
+   * finishes loading and steals focus)
+   * 2. If panel state changes in a way that results in tabgroup changing,
+   * decrement the counter for the panel. Once the counter hits zero, restore
+   * the focus to the original editor
+   */
+  private panelsPendingInitialFocus = new WeakMap<
+    vscode.WebviewPanel,
+    number
+  >();
+
+  initialize(panel: vscode.WebviewPanel): void {
+    console.log('Initializing panel:', panel.title, 2);
+
+    // Only count the last panel initialized
+    this.panelsPendingInitialFocus = new WeakMap();
+    this.panelsPendingInitialFocus.set(panel, 2);
+  }
+
+  handleOnDidChangeViewState(panel: vscode.WebviewPanel): () => void {
+    return (): void => {
+      const uri = vscode.window.activeTextEditor?.document.uri;
+      const didChangeFocus =
+        vscode.window.tabGroups.activeTabGroup.viewColumn !==
+        vscode.window.activeTextEditor!.viewColumn;
+
+      const pendingChangeCount = this.panelsPendingInitialFocus.get(panel) ?? 0;
+      console.log(
+        'Pending panel change count:',
+        panel.title,
+        pendingChangeCount
+      );
+
+      if (!uri || !didChangeFocus || pendingChangeCount <= 0) {
+        return;
+      }
+
+      this.panelsPendingInitialFocus.set(panel, pendingChangeCount - 1);
+
+      vscode.window.showTextDocument(uri, {
+        preview: false,
+        viewColumn: vscode.window.activeTextEditor!.viewColumn,
+      });
+    };
+  }
+}

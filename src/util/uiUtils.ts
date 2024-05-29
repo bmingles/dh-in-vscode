@@ -22,15 +22,26 @@ export interface WorkspaceFolderConfig {
 export async function createConnectionQuickPick(
   connectionOptions: ConnectionOption[],
   selectedUrl?: string | null
-) {
-  return await vscode.window.showQuickPick(
-    connectionOptions.map(option => ({
+): Promise<ConnectionOption | { label: string; url: null } | undefined> {
+  function padLabel(label: string, isSelected: boolean) {
+    return isSelected ? `$(circle-filled) ${label}` : `      ${label}`;
+  }
+
+  const options = [
+    {
+      label: padLabel(
+        selectedUrl == null ? 'Disconnected' : 'Disconnect',
+        selectedUrl == null
+      ),
+      url: null,
+    },
+    ...connectionOptions.map(option => ({
       ...option,
-      label: `${option.url === selectedUrl ? '$(circle-filled) ' : '      '} ${
-        option.label
-      }`,
-    }))
-  );
+      label: padLabel(option.label, option.url === selectedUrl),
+    })),
+  ];
+
+  return await vscode.window.showQuickPick(options);
 }
 
 /**
@@ -100,6 +111,20 @@ export function createDhfsWorkspaceFolderConfig(
     uri,
     name: `${type}: ${url.hostname}`,
   };
+}
+
+// Copied from @deephaven/console `ConsoleUtils`
+export function formatTimestamp(date: Date): string | null {
+  if (date == null || !(date instanceof Date)) {
+    return null;
+  }
+
+  const hours = `${date.getHours()}`.padStart(2, '0');
+  const minutes = `${date.getMinutes()}`.padStart(2, '0');
+  const seconds = `${date.getSeconds()}`.padStart(2, '0');
+  const milliseconds = `${date.getMilliseconds()}`.padStart(3, '0');
+
+  return `${hours}:${minutes}:${seconds}.${milliseconds}`;
 }
 
 /**

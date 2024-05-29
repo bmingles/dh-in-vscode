@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/bmingles/dh-in-vscode"
   },
-  "version": "0.0.10",
+  "version": "0.0.11",
   "engines": {
     "vscode": "^1.87.0"
   },
@@ -52,17 +52,13 @@
     ],
     "commands": [
       {
-        "command": "dh-in-vscode.connect",
-        "title": "Deephaven: Connect Server"
-      },
-      {
         "command": "dh-in-vscode.runCode",
-        "title": "Deephaven: Run",
+        "title": "Run Deephaven File",
         "icon": "$(run-all)"
       },
       {
         "command": "dh-in-vscode.runSelection",
-        "title": "Deephaven: Run Selected",
+        "title": "Run Deephaven Selected Lines",
         "icon": "$(run)"
       },
       {
@@ -71,16 +67,26 @@
       }
     ],
     "menus": {
-      "editor/title": [
+      "commandPalette": [
+        {
+          "command": "dh-in-vscode.runCode",
+          "when": "false"
+        },
+        {
+          "command": "dh-in-vscode.runSelection",
+          "when": "false"
+        }
+      ],
+      "editor/title/run": [
         {
           "command": "dh-in-vscode.runCode",
           "group": "navigation",
-          "when": "editorLangId == python && editorFocus"
+          "when": "editorLangId == python"
         },
         {
           "command": "dh-in-vscode.runSelection",
           "group": "navigation",
-          "when": "editorLangId == python && editorFocus && editorHasSelection"
+          "when": "editorLangId == python"
         }
       ]
     }
@@ -91,7 +97,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "package": "vsce package -o releases/",
+    "package": "vsce package -o releases/ && vsce package -o releases/dh-in-vscode-latest.vsix",
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {

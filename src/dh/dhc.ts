@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { dh as DhType } from './dhc-types';
 import { downloadFromURL, getTempDir, polyfillDh } from '../util';
+import { ConnectionAndSession } from '../common';
 
 export const AUTH_HANDLER_TYPE_ANONYMOUS =
   'io.deephaven.auth.AnonymousAuthenticationHandler';
@@ -37,13 +38,15 @@ export async function initDhcApi(serverUrl: string): Promise<typeof DhType> {
 export async function initDhcSession(
   client: DhType.CoreClient,
   credentials: DhType.LoginCredentials
-): Promise<DhType.IdeSession> {
+): Promise<ConnectionAndSession<DhType.IdeConnection, DhType.IdeSession>> {
   await client.login(credentials);
 
   const cn = await client.getAsIdeConnection();
 
   const type = 'python';
-  return cn.startSession(type);
+  const session = await cn.startSession(type);
+
+  return { cn, session };
 }
 
 /**
