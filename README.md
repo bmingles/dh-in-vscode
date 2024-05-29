@@ -127,3 +127,4 @@ The extension dynamically downloads and loads the DH JS API from a DH Core serve
 - Make sure DH subscriptions are properly cleaned up
 - Need to detect invalid connection if server restarts (presumably other scenarios as well)
 - Split out PanelService
+- Cleanup event handlers / dispose things properly

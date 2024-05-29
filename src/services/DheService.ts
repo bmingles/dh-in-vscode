@@ -21,10 +21,10 @@ import {
 import { initDhcApi } from '../dh/dhc';
 import { getPanelHtml } from '../util';
 import { WebClientDataFsMap } from '../dh/dhe-fs-types';
+import { ConnectionAndSession } from '../common';
 
 export class DheService extends DhService<
   DheType,
-  DhcType.IdeSession,
   EnterpriseClient,
   CommandResult
 > {
@@ -51,7 +51,9 @@ export class DheService extends DhService<
       const client = new dhe.Client(this.wsUrl);
 
       await new Promise(resolve =>
-        client.addEventListener(dhe.Client.EVENT_CONNECT, resolve)
+        this.subscriptions.push(
+          client.addEventListener(dhe.Client.EVENT_CONNECT, resolve)
+        )
       );
 
       return client;
@@ -64,7 +66,10 @@ export class DheService extends DhService<
   protected async createSession(
     dhe: DheType,
     dheClient: EnterpriseClient
-  ): Promise<DhcType.IdeSession | null> {
+  ): Promise<ConnectionAndSession<
+    DhcType.IdeConnection,
+    DhcType.IdeSession
+  > | null> {
     this.username =
       process.env.DH_IN_VSCODE_DHE_USERNAME ??
       (await vscode.window.showInputBox({
@@ -132,12 +137,9 @@ export class DheService extends DhService<
     const cn = await dhcClient.getAsIdeConnection();
 
     const type = 'python';
-    return cn.startSession(type);
+    const session = await cn.startSession(type);
 
-    // const cn = await ide.createConsole(config);
-    // const session = await cn.startSession('python');
-
-    // return session;
+    return { cn, session };
   }
 
   protected runCode(text: string): Promise<CommandResult> {

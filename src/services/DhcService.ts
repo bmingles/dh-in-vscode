@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { dh as DhType } from '../dh/dhc-types';
+import type { dh as DhcType } from '../dh/dhc-types';
 import DhService from './DhService';
 import {
   AUTH_HANDLER_TYPE_ANONYMOUS,
@@ -9,12 +9,12 @@ import {
   initDhcSession,
 } from '../dh/dhc';
 import { getPanelHtml } from '../util';
+import { ConnectionAndSession } from '../common';
 
 export class DhcService extends DhService<
-  typeof DhType,
-  DhType.IdeSession,
-  DhType.CoreClient,
-  DhType.ide.CommandResult
+  typeof DhcType,
+  DhcType.CoreClient,
+  DhcType.ide.CommandResult
 > {
   private psk?: string;
 
@@ -22,7 +22,9 @@ export class DhcService extends DhService<
     return initDhcApi(this.serverUrl);
   }
 
-  protected async createClient(dh: typeof DhType): Promise<DhType.CoreClient> {
+  protected async createClient(
+    dh: typeof DhcType
+  ): Promise<DhcType.CoreClient> {
     try {
       return new dh.CoreClient(this.serverUrl);
     } catch (err) {
@@ -31,8 +33,14 @@ export class DhcService extends DhService<
     }
   }
 
-  protected async createSession(dh: typeof DhType, client: DhType.CoreClient) {
-    let ide: DhType.IdeSession | null = null;
+  protected async createSession(
+    dh: typeof DhcType,
+    client: DhcType.CoreClient
+  ) {
+    let connectionAndSession: ConnectionAndSession<
+      DhcType.IdeConnection,
+      DhcType.IdeSession
+    > | null = null;
 
     try {
       const authConfig = new Set(
@@ -40,7 +48,7 @@ export class DhcService extends DhService<
       );
 
       if (authConfig.has(AUTH_HANDLER_TYPE_ANONYMOUS)) {
-        ide = await initDhcSession(client, {
+        connectionAndSession = await initDhcSession(client, {
           type: dh.CoreClient.LOGIN_TYPE_ANONYMOUS,
         });
       } else if (authConfig.has(AUTH_HANDLER_TYPE_PSK)) {
@@ -50,7 +58,7 @@ export class DhcService extends DhService<
           password: true,
         });
 
-        ide = await initDhcSession(client, {
+        connectionAndSession = await initDhcSession(client, {
           type: 'io.deephaven.authentication.psk.PskAuthenticationHandler',
           token,
         });
@@ -61,10 +69,10 @@ export class DhcService extends DhService<
       console.error(err);
     }
 
-    return ide;
+    return connectionAndSession;
   }
 
-  protected async runCode(text: string): Promise<DhType.ide.CommandResult> {
+  protected async runCode(text: string): Promise<DhcType.ide.CommandResult> {
     return this.session!.runCode(text);
   }
 

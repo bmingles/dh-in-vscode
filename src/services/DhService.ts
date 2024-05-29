@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
-import type { dh as DhType } from '../dh/dhc-types';
+import type { dh as DhcType } from '../dh/dhc-types';
+import { hasErrorCode } from '../util/typeUtils';
+import { ConnectionAndSession } from '../common';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const icons = {
@@ -13,9 +15,9 @@ type IconType = keyof typeof icons;
 
 // Common command result types shared by DHC and DHE
 type ChangesBase = {
-  removed: Partial<DhType.ide.VariableDefinition>[];
-  created: Partial<DhType.ide.VariableDefinition>[];
-  updated: Partial<DhType.ide.VariableDefinition>[];
+  removed: Partial<DhcType.ide.VariableDefinition>[];
+  created: Partial<DhcType.ide.VariableDefinition>[];
+  updated: Partial<DhcType.ide.VariableDefinition>[];
 };
 type CommandResultBase = {
   changes: ChangesBase;
@@ -24,7 +26,6 @@ type CommandResultBase = {
 
 export abstract class DhService<
   TDH,
-  TSession,
   TClient,
   TCommandResult extends CommandResultBase
 > {
@@ -34,24 +35,32 @@ export abstract class DhService<
   }
 
   public readonly serverUrl: string;
+  protected readonly subscriptions: (() => void)[] = [];
 
   protected outputChannel: vscode.OutputChannel;
   private panels = new Map<string, vscode.WebviewPanel>();
   private panelFocusManager = new PanelFocusManager();
   private cachedCreateClient: Promise<TClient> | null = null;
-  private cachedCreateSession: Promise<TSession | null> | null = null;
+  private cachedCreateSession: Promise<ConnectionAndSession<
+    DhcType.IdeConnection,
+    DhcType.IdeSession
+  > | null> | null = null;
   private cachedInitApi: Promise<TDH> | null = null;
 
   protected dh: TDH | null = null;
+  protected cn: DhcType.IdeConnection | null = null;
   protected client: TClient | null = null;
-  protected session: TSession | null = null;
+  protected session: DhcType.IdeSession | null = null;
 
   protected abstract initApi(): Promise<TDH>;
   protected abstract createClient(dh: TDH): Promise<TClient>;
   protected abstract createSession(
     dh: TDH,
     client: TClient
-  ): Promise<TSession | null>;
+  ): Promise<ConnectionAndSession<
+    DhcType.IdeConnection,
+    DhcType.IdeSession
+  > | null>;
   protected abstract runCode(text: string): Promise<TCommandResult>;
   protected abstract getPanelHtml(title: string): string;
   protected abstract handlePanelMessage(
@@ -61,6 +70,18 @@ export abstract class DhService<
     },
     postResponseMessage: (response: unknown) => void
   ): Promise<void>;
+
+  private clearCaches(): void {
+    this.cachedCreateClient = null;
+    this.cachedCreateSession = null;
+    this.cachedInitApi = null;
+    this.client = null;
+    this.cn = null;
+    this.dh = null;
+    this.session = null;
+
+    this.subscriptions.forEach(dispose => dispose());
+  }
 
   public get isInitialized(): boolean {
     return this.cachedInitApi != null;
@@ -80,6 +101,7 @@ export abstract class DhService<
         `Initialized Deephaven API: ${this.serverUrl}`
       );
     } catch (err) {
+      this.clearCaches();
       console.error(err);
       this.outputChannel.appendLine(
         `Failed to initialize Deephaven API: ${err}`
@@ -98,13 +120,30 @@ export abstract class DhService<
       this.outputChannel.appendLine('Creating session...');
       this.cachedCreateSession = this.createSession(this.dh, this.client);
     }
-    this.session = await this.cachedCreateSession;
+    const { cn = null, session = null } =
+      (await this.cachedCreateSession) ?? {};
 
-    if (this.session == null) {
+    this.cn = cn;
+    this.session = session;
+
+    if (this.cn == null || this.session == null) {
+      this.clearCaches();
+
       vscode.window.showErrorMessage(
         `Failed to create Deephaven session: ${this.serverUrl}`
       );
     } else {
+      // TODO: Use constant event name
+      this.subscriptions.push(
+        this.cn.addEventListener('disconnect', () => {
+          this.clearCaches();
+
+          vscode.window.showInformationMessage(
+            `Disconnected from Deephaven server: ${this.serverUrl}`
+          );
+        })
+      );
+
       vscode.window.showInformationMessage(
         `Created Deephaven session: ${this.serverUrl}`
       );
@@ -155,6 +194,16 @@ export abstract class DhService<
       error = result.error;
     } catch (err) {
       error = String(err);
+
+      // Grpc UNAUTHENTICATED code. This should not generally happen since we
+      // clear the caches on connection disconnect
+      if (hasErrorCode(err, 16)) {
+        this.clearCaches();
+        vscode.window.showErrorMessage(
+          'Session is no longer invalid. Please re-run the command to reconnect.'
+        );
+        return;
+      }
     }
 
     if (error) {
