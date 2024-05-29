@@ -23,11 +23,7 @@ import { getPanelHtml } from '../util';
 import { WebClientDataFsMap } from '../dh/dhe-fs-types';
 import { ConnectionAndSession } from '../common';
 
-export class DheService extends DhService<
-  DheType,
-  EnterpriseClient,
-  CommandResult
-> {
+export class DheService extends DhService<DheType, EnterpriseClient> {
   constructor(serverUrl: string, outputChannel: vscode.OutputChannel) {
     super(serverUrl, outputChannel);
     this.wsUrl = getWsUrl(serverUrl);
@@ -140,10 +136,6 @@ export class DheService extends DhService<
     const session = await cn.startSession(type);
 
     return { cn, session };
-  }
-
-  protected runCode(text: string): Promise<CommandResult> {
-    return this.session!.runCode(text);
   }
 
   protected getPanelHtml(title: string): string {

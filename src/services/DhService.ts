@@ -24,11 +24,7 @@ type CommandResultBase = {
   error: string;
 };
 
-export abstract class DhService<
-  TDH,
-  TClient,
-  TCommandResult extends CommandResultBase
-> {
+export abstract class DhService<TDH, TClient> {
   constructor(serverUrl: string, outputChannel: vscode.OutputChannel) {
     this.serverUrl = serverUrl;
     this.outputChannel = outputChannel;
@@ -61,7 +57,6 @@ export abstract class DhService<
     DhcType.IdeConnection,
     DhcType.IdeSession
   > | null>;
-  protected abstract runCode(text: string): Promise<TCommandResult>;
   protected abstract getPanelHtml(title: string): string;
   protected abstract handlePanelMessage(
     message: {
@@ -150,6 +145,10 @@ export abstract class DhService<
     }
   }
 
+  protected runCode(text: string): Promise<DhcType.ide.CommandResult> {
+    return this.session!.runCode(text);
+  }
+
   public async runEditorCode(
     editor: vscode.TextEditor,
     selectionOnly = false
@@ -190,7 +189,7 @@ export abstract class DhService<
     let error: string | null = null;
 
     try {
-      result = await this.runCode(text);
+      result = await this.session.runCode(text);
       error = result.error;
     } catch (err) {
       error = String(err);

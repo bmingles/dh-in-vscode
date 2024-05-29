@@ -11,11 +11,7 @@ import {
 import { getPanelHtml } from '../util';
 import { ConnectionAndSession } from '../common';
 
-export class DhcService extends DhService<
-  typeof DhcType,
-  DhcType.CoreClient,
-  DhcType.ide.CommandResult
-> {
+export class DhcService extends DhService<typeof DhcType, DhcType.CoreClient> {
   private psk?: string;
 
   protected async initApi() {
@@ -70,10 +66,6 @@ export class DhcService extends DhService<
     }
 
     return connectionAndSession;
-  }
-
-  protected async runCode(text: string): Promise<DhcType.ide.CommandResult> {
-    return this.session!.runCode(text);
   }
 
   protected getPanelHtml(title: string): string {
