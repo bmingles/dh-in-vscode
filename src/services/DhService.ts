@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { dh as DhcType } from '../dh/dhc-types';
 import { hasErrorCode } from '../util/typeUtils';
 import { ConnectionAndSession } from '../common';
+import { formatTimestamp } from '../util';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const icons = {
@@ -114,7 +115,38 @@ export abstract class DhService<TDH, TClient> {
     if (this.cachedCreateSession == null) {
       this.outputChannel.appendLine('Creating session...');
       this.cachedCreateSession = this.createSession(this.dh, this.client);
+
+      const { cn = null, session = null } =
+        (await this.cachedCreateSession) ?? {};
+
+      // TODO: Use constant event name
+      if (cn != null) {
+        this.subscriptions.push(
+          cn.addEventListener('disconnect', () => {
+            this.clearCaches();
+
+            vscode.window.showInformationMessage(
+              `Disconnected from Deephaven server: ${this.serverUrl}`
+            );
+          })
+        );
+      }
+
+      if (session != null) {
+        session.onLogMessage(logItem => {
+          // TODO: Should this pull log level from config somewhere?
+          if (logItem.logLevel !== 'INFO') {
+            const date = new Date(logItem.micros / 1000);
+            const timestamp = formatTimestamp(date);
+
+            this.outputChannel.append(
+              `${timestamp} ${logItem.logLevel} ${logItem.message}`
+            );
+          }
+        });
+      }
     }
+
     const { cn = null, session = null } =
       (await this.cachedCreateSession) ?? {};
 
@@ -128,25 +160,10 @@ export abstract class DhService<TDH, TClient> {
         `Failed to create Deephaven session: ${this.serverUrl}`
       );
     } else {
-      // TODO: Use constant event name
-      this.subscriptions.push(
-        this.cn.addEventListener('disconnect', () => {
-          this.clearCaches();
-
-          vscode.window.showInformationMessage(
-            `Disconnected from Deephaven server: ${this.serverUrl}`
-          );
-        })
-      );
-
       vscode.window.showInformationMessage(
         `Created Deephaven session: ${this.serverUrl}`
       );
     }
-  }
-
-  protected runCode(text: string): Promise<DhcType.ide.CommandResult> {
-    return this.session!.runCode(text);
   }
 
   public async runEditorCode(
@@ -159,9 +176,9 @@ export abstract class DhService<TDH, TClient> {
       return;
     }
 
-    this.outputChannel.appendLine(
-      `Sending${selectionOnly ? ' selected' : ''} code to: ${this.serverUrl}`
-    );
+    // this.outputChannel.appendLine(
+    //   `Sending${selectionOnly ? ' selected' : ''} code to: ${this.serverUrl}`
+    // );
 
     if (this.session == null) {
       await this.initDh();

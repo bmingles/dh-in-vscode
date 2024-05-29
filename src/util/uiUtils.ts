@@ -113,6 +113,20 @@ export function createDhfsWorkspaceFolderConfig(
   };
 }
 
+// Copied from @deephaven/console `ConsoleUtils`
+export function formatTimestamp(date: Date): string | null {
+  if (date == null || !(date instanceof Date)) {
+    return null;
+  }
+
+  const hours = `${date.getHours()}`.padStart(2, '0');
+  const minutes = `${date.getMinutes()}`.padStart(2, '0');
+  const seconds = `${date.getSeconds()}`.padStart(2, '0');
+  const milliseconds = `${date.getMilliseconds()}`.padStart(3, '0');
+
+  return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+}
+
 /**
  * See if a workspace folder is present for the given uri.
  * @param uri
