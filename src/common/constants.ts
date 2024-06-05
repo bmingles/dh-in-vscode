@@ -9,3 +9,6 @@ export const RUN_SELECTION_COMMAND = 'dh-in-vscode.runSelection';
 export const SELECT_CONNECTION_COMMAND = 'dh-in-vscode.selectConnection';
 export const WS_FOLDER_CONNECTION_URL = 'wsFolderConnectionUrl';
 export const DHE_CURRENT_FS_VERSION = 8;
+
+export const STATUS_BAR_DISCONNECTED_TEXT = 'Deephaven: Disconnected';
+export const STATUS_BAR_DISCONNECT_TEXT = 'Deephaven: Disconnect';

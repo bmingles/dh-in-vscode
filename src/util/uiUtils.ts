@@ -1,5 +1,10 @@
 import * as vscode from 'vscode';
-import { ConnectionType, SELECT_CONNECTION_COMMAND } from '../common';
+import {
+  ConnectionType,
+  SELECT_CONNECTION_COMMAND,
+  STATUS_BAR_DISCONNECTED_TEXT,
+  STATUS_BAR_DISCONNECT_TEXT,
+} from '../common';
 import { Config } from '../services';
 import { serverUrlToFsRootUri } from './urlUtils';
 
@@ -7,6 +12,11 @@ export interface ConnectionOption {
   type: ConnectionType;
   label: string;
   url: string;
+}
+
+export interface DisconnectOption {
+  label: string;
+  url: null;
 }
 
 export interface WorkspaceFolderConfig {
@@ -22,24 +32,24 @@ export interface WorkspaceFolderConfig {
 export async function createConnectionQuickPick(
   connectionOptions: ConnectionOption[],
   selectedUrl?: string | null
-): Promise<ConnectionOption | { label: string; url: null } | undefined> {
+): Promise<ConnectionOption | DisconnectOption | undefined> {
   function padLabel(label: string, isSelected: boolean) {
     return isSelected ? `$(circle-filled) ${label}` : `      ${label}`;
   }
 
-  const options = [
-    {
-      label: padLabel(
-        selectedUrl == null ? 'Disconnected' : 'Disconnect',
-        selectedUrl == null
-      ),
-      url: null,
-    },
+  const options: (ConnectionOption | DisconnectOption)[] = [
     ...connectionOptions.map(option => ({
       ...option,
       label: padLabel(option.label, option.url === selectedUrl),
     })),
   ];
+
+  if (selectedUrl != null) {
+    options.unshift({
+      label: padLabel(STATUS_BAR_DISCONNECT_TEXT, false),
+      url: null,
+    });
+  }
 
   return await vscode.window.showQuickPick(options);
 }
@@ -53,7 +63,7 @@ export function createConnectStatusBarItem() {
     100
   );
   statusBarItem.command = SELECT_CONNECTION_COMMAND;
-  statusBarItem.text = createConnectText('Deephaven: Disconnected');
+  statusBarItem.text = createConnectText(STATUS_BAR_DISCONNECTED_TEXT);
   statusBarItem.show();
 
   return statusBarItem;
@@ -91,7 +101,7 @@ export function createConnectionOptions(): ConnectionOption[] {
  * Create display text for the connection status bar item.
  * @param connectionDisplay The connection display text
  */
-export function createConnectText(connectionDisplay: string | 'Deephaven') {
+export function createConnectText(connectionDisplay: string) {
   return `$(debug-disconnect) ${connectionDisplay.trim()}`;
 }
 

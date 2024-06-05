@@ -3,7 +3,6 @@ import {
   ConnectionOption,
   createConnectStatusBarItem,
   createConnectText,
-  createConnectionOption,
   createConnectionOptions,
   createConnectionQuickPick,
   createDhfsWorkspaceFolderConfig,
@@ -19,6 +18,7 @@ import {
   RUN_SELECTION_COMMAND,
   WS_FOLDER_CONNECTION_URL,
   SELECT_CONNECTION_COMMAND,
+  STATUS_BAR_DISCONNECTED_TEXT,
 } from './common';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -146,7 +146,9 @@ export function activate(context: vscode.ExtensionContext) {
     if (connectionUrl == null || !option) {
       selectedConnectionUrl = null;
       selectedDhService = null;
-      connectStatusBarItem.text = createConnectText('Disconnected');
+      connectStatusBarItem.text = createConnectText(
+        STATUS_BAR_DISCONNECTED_TEXT
+      );
       dhcServiceRegistry.clearCache();
       dheServiceRegistry.clearCache();
       return;
