@@ -33,6 +33,20 @@ export class PanelFocusManager {
     this.panelsPendingInitialFocus.set(panel, 2);
   }
 
+  /**
+   * Try to stop panels from stealing focus when they finish loading as this
+   * causes run buttons to disappear. Note that this does not address the issues
+   * outline here: https://github.com/deephaven/vscode-deephaven/issues/1.
+   *
+   * @deprecated vscode v90 added an optional `workbench.editor.alwaysShowEditorActions`
+   * https://code.visualstudio.com/updates/v1_90#_always-show-editor-actions
+   * Setting this to true fixes part of the issue with panels stealing focus, so
+   * this workaround may no longer be necessary. It still doesn't fix the issue
+   * with changing the selected action which still seems to intermittently not
+   * persist whenever a custom panel is visible.
+   * @param panel
+   * @returns
+   */
   handleOnDidChangeViewState(panel: vscode.WebviewPanel): () => void {
     return (): void => {
       const uri = vscode.window.activeTextEditor?.document.uri;

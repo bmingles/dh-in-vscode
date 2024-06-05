@@ -265,10 +265,11 @@ export abstract class DhService<TDH, TClient> {
           this.panels.delete(title);
         });
 
+        // See @deprecated comment in PanelFocusManager.onDidChangeViewState
         // Ensure focus is not stolen when panel is loaded
-        panel.onDidChangeViewState(
-          this.panelFocusManager.handleOnDidChangeViewState(panel)
-        );
+        // panel.onDidChangeViewState(
+        //   this.panelFocusManager.handleOnDidChangeViewState(panel)
+        // );
       }
 
       const panel = this.panels.get(title)!;
