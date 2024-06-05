@@ -23,6 +23,8 @@ Build a .vsix locally via `npm run package`
 Then install in vscode:
 ![Install Deephaven in VS Code](docs/install.png)
 
+> Note: There are some `vscode` bugs that cause some flakiness with the `run` button. vscode `v90` introduced an optional `workbench.editor.alwaysShowEditorActions` setting. Setting this to `true` improves the experience here. Namely the run button will not disappear when running commands or selecting its dropdown. See https://github.com/deephaven/vscode-deephaven/issues/1 for more details.
+
 ## Connecting to a Server
 
 Core server `http://localhost:10000/` is configured by default and doesn't require any additional config. Additional connections can be configured in `vscode` settings.
