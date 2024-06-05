@@ -43,17 +43,15 @@ export class PanelFocusManager {
       const didChangeFocus =
         activeTabGroupViewColumn !== activeEditorViewColumn;
 
-      console.log('Focus changed:', {
+      const pendingChangeCount = this.panelsPendingInitialFocus.get(panel) ?? 0;
+
+      console.log('Panel view state changed:', {
+        panelTitle: panel.title,
         activeEditorViewColumn,
         activeTabGroupViewColumn,
+        didChangeFocus,
+        pendingChangeCount,
       });
-
-      const pendingChangeCount = this.panelsPendingInitialFocus.get(panel) ?? 0;
-      console.log(
-        'Pending panel change count:',
-        panel.title,
-        pendingChangeCount
-      );
 
       if (!uri || !didChangeFocus || pendingChangeCount <= 0) {
         return;
